@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}MDCE FleetHub{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    {% if session.admin_id %}
+    <div class="app">
+      <aside class="sidebar">
+        <h1 class="brand">MDCE</h1>
+        <div class="profile">
+          <div class="avatar"></div>
+          <div class="profile-name">{{ session.admin_name }}</div>
+        </div>
+        <nav>
+          <a href="#" class="nav-btn">DockTrack</a>
+          <a href="#" class="nav-btn">FleetHub</a>
+          <a href="#" class="nav-btn">IssueTrack</a>
+        </nav>
+        <div class="side-bottom">
+          <a href="{{ url_for('dashboard') }}" class="small-btn">Back</a>
+          <a href="{{ url_for('logout') }}" class="small-btn">Log out</a>
+        </div>
+      </aside>
+      <main class="content">{% block content %}{% endblock %}</main>
+    </div>
+    {% else %} {% block public %}{% endblock %} {% endif %}
+  </body>
+</html>

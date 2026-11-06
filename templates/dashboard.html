@@ -1,0 +1,35 @@
+{% extends "base.html" %} {% block title %}MDCE FleetHub - Dashboard{% endblock
+%} {% block content %}
+<h2 class="page-title">Good day, {{ name }}!</h2>
+
+<div class="cards">
+  <div class="card">
+    <h3>Jeepneys</h3>
+    <p class="big">{{ jeeps }}</p>
+  </div>
+  <div class="card">
+    <h3>Drivers</h3>
+    <p class="big">{{ drivers }}</p>
+  </div>
+  <div class="card">
+    <h3>Documents on file</h3>
+    <p class="big">{{ docs }}</p>
+  </div>
+</div>
+
+<div class="card reminders">
+  <h3>Expiring soon (next 30 days)</h3>
+  {% if expiring %}
+  <ul>
+    {% for d in expiring %}
+    <li>
+      {{ d.doc_type }} - {{ d.plate_no or d.full_name }} - expires {{
+      d.expiry_date }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Nothing expiring soon.</p>
+  {% endif %}
+</div>
+{% endblock %}

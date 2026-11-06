@@ -1,0 +1,181 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Rockwell, "Rockwell Nova", Georgia, serif;
+    color: #1c3d6e;
+    background: linear-gradient(180deg, #3b8fb8 0%, #bcd6e4 55%, #d9d4b8 100%);
+    background-attachment: fixed;
+}
+
+/* login */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    width: 360px;
+    padding: 28px;
+    border: 1px solid #1c3d6e;
+    border-radius: 10px;
+    background: rgba(59, 143, 184, 0.55);
+}
+
+.login-card h2 {
+    text-align: center;
+    margin-top: 0;
+}
+
+.logo {
+    display: block;
+    width: 120px;
+    margin: 0 auto 12px;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 14px;
+    border: 1px solid #7aa7bf;
+    border-radius: 6px;
+    background: #f3f7fa;
+    font-family: inherit;
+    font-size: 15px;
+}
+
+.btn {
+    display: block;
+    margin: 0 auto;
+    padding: 8px 28px;
+    background: #3b8fb8;
+    color: #fff;
+    border: 1px solid #1c3d6e;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 15px;
+}
+
+.error {
+    color: #b00020;
+    text-align: center;
+}
+
+/* app layout */
+.app {
+    display: flex;
+    min-height: 100vh;
+    padding: 16px;
+}
+
+.sidebar {
+    width: 200px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.35);
+    border: 1px solid #1c3d6e;
+    border-radius: 10px 0 0 10px;
+}
+
+.brand {
+    margin: 0 0 12px;
+    letter-spacing: 4px;
+}
+
+.profile {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.avatar {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 6px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #1c3d6e;
+}
+
+.nav-btn {
+    display: block;
+    margin-bottom: 12px;
+    padding: 10px;
+    text-align: center;
+    text-decoration: none;
+    color: #1c3d6e;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid #1c3d6e;
+    border-radius: 8px;
+}
+
+.nav-btn:hover {
+    background: #3b8fb8;
+    color: #fff;
+}
+
+.side-bottom {
+    margin-top: auto;
+}
+
+.small-btn {
+    display: block;
+    margin-top: 8px;
+    padding: 4px;
+    text-align: center;
+    font-size: 13px;
+    text-decoration: none;
+    color: #1c3d6e;
+    background: #cfe0ee;
+    border: 1px solid #1c3d6e;
+    border-radius: 4px;
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid #1c3d6e;
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+}
+
+.page-title {
+    margin-top: 0;
+}
+
+.cards {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.card {
+    flex: 1;
+    min-width: 180px;
+    padding: 16px;
+    background: rgba(59, 143, 184, 0.45);
+    border: 1px solid #1c3d6e;
+    border-radius: 8px;
+}
+
+.card h3 {
+    margin: 0 0 8px;
+}
+
+.big {
+    font-size: 32px;
+    margin: 0;
+}
+
+.reminders ul {
+    padding-left: 18px;
+    margin: 0;
+}
