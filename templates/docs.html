@@ -1,0 +1,84 @@
+{% extends "base.html" %} {% block title %}DockTrack{% endblock %} {% block
+content %}
+<div class="page-head">
+  <h2 class="page-title">DockTrack - Documents</h2>
+  <a href="{{ url_for('docs_add') }}" class="btn">+ Add file</a>
+</div>
+
+<div class="tabs">
+  <a
+    href="{{ url_for('docs_list') }}"
+    class="tab {% if not current_type %}active{% endif %}"
+    >All</a
+  >
+  {% for t in doc_types %}
+  <a
+    href="{{ url_for('docs_list', type=t) }}"
+    class="tab {% if current_type == t %}active{% endif %}"
+    >{{ t }}</a
+  >
+  {% endfor %}
+</div>
+
+<table class="table">
+  <tr>
+    <th>Date</th>
+    <th>Type</th>
+    <th>Belongs to</th>
+    <th>Expiry</th>
+    <th>File</th>
+    <th></th>
+  </tr>
+  {% for d in docs %}
+  <tr>
+    <td>{{ d.doc_date or "-" }}</td>
+    <td>{{ d.doc_type }}</td>
+    <td>
+      {% if d.jeep_no %}Jeep {{ d.jeep_no }} ({{ d.plate_no }}) {% elif
+      d.driver_name %}{{ d.driver_name }} {% else %}-{% endif %}
+    </td>
+    <td>
+      {{ d.expiry_date or "-" }} {% if d.days_left is not none and d.days_left <
+      0 %}<span class="expired">Expired</span> {% elif d.days_left is not none
+      and d.days_left <= 30 %}<span class="soon">Expiring soon</span>{% endif %}
+    </td>
+    <td>
+      <a href="{{ url_for('docs_file', doc_id=d.id) }}" target="_blank">View</a>
+    </td>
+    <td>
+      <form
+        method="POST"
+        action="{{ url_for('docs_delete', doc_id=d.id) }}"
+        class="inline"
+        onsubmit="return confirm('Delete this file?');"
+      >
+        <button type="submit" class="link-btn">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr>
+    <td colspan="6">No documents yet. Click "+ Add file".</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<div class="card reminders" style="margin-top: 16px">
+  <h3>Expiring soon (next 30 days)</h3>
+  {% if expiring %}
+  <ul>
+    {% for e in expiring %}
+    <li>
+      {{ e.what }} - {{ e.who }} - {{ e.expiry }} {% if e.days_left < 0 %}<span
+        class="expired"
+        >expired {{ -e.days_left }} day(s) ago</span
+      >
+      {% else %}<span class="soon">in {{ e.days_left }} day(s)</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Nothing expiring soon.</p>
+  {% endif %}
+</div>
+{% endblock %}

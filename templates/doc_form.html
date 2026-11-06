@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Add file{% endblock %}
+{% block content %}
+<h2 class="page-title">Add file</h2>
+<form method="POST" enctype="multipart/form-data" class="form-card">
+  <label>Document type</label>
+  <select name="doc_type" required>
+    {% for t in doc_types %}
+      <option value="{{ t }}" {% if form.get('doc_type') == t %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Belongs to</label>
+  <select name="owner" required>
+    <option value="">- choose -</option>
+    <optgroup label="Jeeps">
+      {% for j in jeeps %}
+        <option value="jeep:{{ j.id }}" {% if form.get('owner') == 'jeep:' ~ j.id %}selected{% endif %}>
+          {{ j.jeep_no }} - {{ j.plate_no }}
+        </option>
+      {% endfor %}
+    </optgroup>
+    <optgroup label="Drivers">
+      {% for d in drivers %}
+        <option value="driver:{{ d.id }}" {% if form.get('owner') == 'driver:' ~ d.id %}selected{% endif %}>
+          {{ d.full_name }}
+        </option>
+      {% endfor %}
+    </optgroup>
+  </select>
+
+  <label>Document date</label>
+  <input type="date" name="doc_date" value="{{ form.get('doc_date') or '' }}">
+
+  <label>Expiry date (leave blank if none)</label>
+  <input type="date" name="expiry_date" value="{{ form.get('expiry_date') or '' }}">
+
+  <label>File (pdf, png, jpg)</label>
+  <input type="file" name="file" accept=".pdf,image/*" required>
+
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <button type="submit" class="btn">Save</button>
+  <a href="{{ url_for('docs_list') }}">Cancel</a>
+</form>
+{% endblock %}

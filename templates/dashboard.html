@@ -22,10 +22,7 @@
   {% if expiring %}
   <ul>
     {% for d in expiring %}
-    <li>
-      {{ d.doc_type }} - {{ d.plate_no or d.full_name }} - expires {{
-      d.expiry_date }}
-    </li>
+    <li>{{ d.what }} - {{ d.who }} - expires {{ d.expiry }}</li>
     {% endfor %}
   </ul>
   {% else %}

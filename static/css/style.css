@@ -311,3 +311,15 @@ select {
     font-family: inherit;
     font-size: 15px;
 }
+
+.expired {
+    color: #b00020;
+    font-weight: bold;
+    margin-left: 6px;
+}
+
+.soon {
+    color: #b36b00;
+    font-weight: bold;
+    margin-left: 6px;
+}
