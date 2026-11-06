@@ -248,3 +248,9 @@ label {
     border: 1px solid #c9a227;
     border-radius: 6px;
 }
+
+.nav-btn.active {
+    background: #3b8fb8;
+    color: #fff;
+    font-weight: bold;
+}

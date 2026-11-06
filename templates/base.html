@@ -10,7 +10,7 @@
     />
   </head>
   <body>
-    {% if session.admin_id %}
+    {% if session.admin_id %} {% set ep = request.endpoint or '' %}
     <div class="app">
       <aside class="sidebar">
         <h1 class="brand">MDCE</h1>
@@ -19,9 +19,21 @@
           <div class="profile-name">{{ session.admin_name }}</div>
         </div>
         <nav>
-          <a href="#" class="nav-btn">DockTrack</a>
-          <a href="{{ url_for('jeeps_list') }}" class="nav-btn">FleetHub</a>
-          <a href="#" class="nav-btn">IssueTrack</a>
+          <a
+            href="#"
+            class="nav-btn {% if ep.startswith('doc') %}active{% endif %}"
+            >DockTrack</a
+          >
+          <a
+            href="{{ url_for('jeeps_list') }}"
+            class="nav-btn {% if ep.startswith(('jeep', 'driver')) %}active{% endif %}"
+            >FleetHub</a
+          >
+          <a
+            href="#"
+            class="nav-btn {% if ep.startswith('issue') %}active{% endif %}"
+            >IssueTrack</a
+          >
         </nav>
         <div class="side-bottom">
           <a href="{{ url_for('dashboard') }}" class="small-btn">Back</a>
