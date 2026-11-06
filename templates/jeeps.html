@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block title %}FleetHub - Jeeps{% endblock %} {%
-block content %}
+block content %} {% include "_fleet_tabs.html" %}
 <div class="page-head">
   <h2 class="page-title">FleetHub - Jeeps</h2>
   <a href="{{ url_for('jeep_add') }}" class="btn">+ Add jeep</a>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% include "_fleet_tabs.html" %}
+<h2 class="page-title">{{ title }}</h2>
+
+<form method="POST" enctype="multipart/form-data" class="form-card wide">
+  <div class="form-grid">
+    <div>
+      <label>Full name</label>
+      <input type="text" name="full_name" value="{{ driver.get('full_name') or '' }}" required>
+    </div>
+    <div>
+      <label>Birth date</label>
+      <input type="date" name="birth_date" value="{{ driver.get('birth_date') or '' }}">
+    </div>
+    <div>
+      <label>Contact no.</label>
+      <input type="text" name="contact_no" value="{{ driver.get('contact_no') or '' }}">
+    </div>
+    <div>
+      <label>Address</label>
+      <input type="text" name="address" value="{{ driver.get('address') or '' }}">
+    </div>
+    <div>
+      <label>License no.</label>
+      <input type="text" name="license_no" value="{{ driver.get('license_no') or '' }}">
+    </div>
+    <div>
+      <label>License expiry</label>
+      <input type="date" name="license_expiry" value="{{ driver.get('license_expiry') or '' }}">
+    </div>
+    <div>
+      <label>Date joined MDCE</label>
+      <input type="date" name="date_joined" value="{{ driver.get('date_joined') or '' }}">
+    </div>
+    <div>
+      <label>Assigned jeep</label>
+      <select name="jeep_id">
+        <option value="">- none -</option>
+        {% for j in jeeps %}
+        <option value="{{ j.id }}" {% if driver.get('jeep_id')|string == j.id|string %}selected{% endif %}>
+          {{ j.jeep_no }} - {{ j.plate_no }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Driving this jeep since</label>
+      <input type="date" name="assigned_since" value="{{ driver.get('assigned_since') or '' }}">
+    </div>
+    <div>
+      <label>Emergency contact name</label>
+      <input type="text" name="emergency_name" value="{{ driver.get('emergency_name') or '' }}">
+    </div>
+    <div>
+      <label>Emergency contact no.</label>
+      <input type="text" name="emergency_contact_no" value="{{ driver.get('emergency_contact_no') or '' }}">
+    </div>
+    <div>
+      <label>Photo</label>
+      {% if driver.get('photo_path') %}
+        <img src="{{ url_for('static', filename=driver.get('photo_path')) }}" class="thumb big" alt="">
+      {% endif %}
+      <input type="file" name="photo" accept="image/*">
+    </div>
+  </div>
+
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <button type="submit" class="btn">Save</button>
+  <a href="{{ url_for('drivers_list') }}">Cancel</a>
+</form>
+{% endblock %}

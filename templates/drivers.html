@@ -1,0 +1,56 @@
+{% extends "base.html" %} {% block title %}FleetHub - Drivers{% endblock %} {%
+block content %} {% include "_fleet_tabs.html" %}
+<div class="page-head">
+  <h2 class="page-title">FleetHub - Drivers</h2>
+  <a href="{{ url_for('driver_add') }}" class="btn">+ Add driver</a>
+</div>
+
+<table class="table">
+  <tr>
+    <th></th>
+    <th>Name</th>
+    <th>Age</th>
+    <th>Jeep no.</th>
+    <th>Plate no.</th>
+    <th>Contact</th>
+    <th>Address</th>
+    <th></th>
+  </tr>
+  {% for d in drivers %}
+  <tr>
+    <td>
+      {% if d.photo_path %}
+      <img
+        src="{{ url_for('static', filename=d.photo_path) }}"
+        class="thumb"
+        alt=""
+      />
+      {% else %}
+      <div class="thumb"></div>
+      {% endif %}
+    </td>
+    <td>{{ d.full_name }}</td>
+    <td>{{ d.age if d.age is not none else "-" }}</td>
+    <td>{{ d.jeep_no or "-" }}</td>
+    <td>{{ d.plate_no or "-" }}</td>
+    <td>{{ d.contact_no or "-" }}</td>
+    <td>{{ d.address or "-" }}</td>
+    <td>
+      <a href="{{ url_for('driver_edit', driver_id=d.id) }}">Edit</a>
+      <form
+        method="POST"
+        action="{{ url_for('driver_delete', driver_id=d.id) }}"
+        class="inline"
+        onsubmit="return confirm('Delete this driver?');"
+      >
+        <button type="submit" class="link-btn">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr>
+    <td colspan="8">No drivers yet. Click "+ Add driver".</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

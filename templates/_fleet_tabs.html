@@ -1,0 +1,13 @@
+{% set ep = request.endpoint or '' %}
+<div class="tabs">
+  <a
+    href="{{ url_for('jeeps_list') }}"
+    class="tab {% if ep.startswith('jeep') %}active{% endif %}"
+    >Jeeps</a
+  >
+  <a
+    href="{{ url_for('drivers_list') }}"
+    class="tab {% if ep.startswith('driver') %}active{% endif %}"
+    >Drivers</a
+  >
+</div>

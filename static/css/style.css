@@ -254,3 +254,60 @@ label {
     color: #fff;
     font-weight: bold;
 }
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.tab {
+    padding: 6px 16px;
+    text-decoration: none;
+    color: #1c3d6e;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid #1c3d6e;
+    border-radius: 6px;
+}
+
+.tab.active {
+    background: #3b8fb8;
+    color: #fff;
+}
+
+.thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #fff;
+    border: 1px solid #1c3d6e;
+    display: block;
+}
+
+.thumb.big {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 8px;
+}
+
+.form-card.wide {
+    max-width: 760px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 20px;
+}
+
+select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 14px;
+    border: 1px solid #7aa7bf;
+    border-radius: 6px;
+    background: #f3f7fa;
+    font-family: inherit;
+    font-size: 15px;
+}
