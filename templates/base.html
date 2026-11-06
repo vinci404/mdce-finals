@@ -20,7 +20,7 @@
         </div>
         <nav>
           <a href="#" class="nav-btn">DockTrack</a>
-          <a href="#" class="nav-btn">FleetHub</a>
+          <a href="{{ url_for('jeeps_list') }}" class="nav-btn">FleetHub</a>
           <a href="#" class="nav-btn">IssueTrack</a>
         </nav>
         <div class="side-bottom">
@@ -28,7 +28,11 @@
           <a href="{{ url_for('logout') }}" class="small-btn">Log out</a>
         </div>
       </aside>
-      <main class="content">{% block content %}{% endblock %}</main>
+      <main class="content">
+        {% with messages = get_flashed_messages() %} {% for m in messages %}
+        <p class="flash">{{ m }}</p>
+        {% endfor %} {% endwith %} {% block content %}{% endblock %}
+      </main>
     </div>
     {% else %} {% block public %}{% endblock %} {% endif %}
   </body>

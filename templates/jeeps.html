@@ -1,0 +1,42 @@
+{% extends "base.html" %} {% block title %}FleetHub - Jeeps{% endblock %} {%
+block content %}
+<div class="page-head">
+  <h2 class="page-title">FleetHub - Jeeps</h2>
+  <a href="{{ url_for('jeep_add') }}" class="btn">+ Add jeep</a>
+</div>
+
+<table class="table">
+  <tr>
+    <th>Jeep no.</th>
+    <th>Plate no.</th>
+    <th>Route</th>
+    <th>Driver</th>
+    <th>Registration expiry</th>
+    <th></th>
+  </tr>
+  {% for j in jeeps %}
+  <tr>
+    <td>{{ j.jeep_no }}</td>
+    <td>{{ j.plate_no }}</td>
+    <td>{{ j.route or "-" }}</td>
+    <td>{{ j.driver_name or "-" }}</td>
+    <td>{{ j.registration_expiry or "-" }}</td>
+    <td>
+      <a href="{{ url_for('jeep_edit', jeep_id=j.id) }}">Edit</a>
+      <form
+        method="POST"
+        action="{{ url_for('jeep_delete', jeep_id=j.id) }}"
+        class="inline"
+        onsubmit="return confirm('Delete this jeep?');"
+      >
+        <button type="submit" class="link-btn">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr>
+    <td colspan="6">No jeeps yet. Click "+ Add jeep".</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

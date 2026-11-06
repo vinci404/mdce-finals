@@ -1,0 +1,37 @@
+{% extends "base.html" %} {% block title %}{{ title }}{% endblock %} {% block
+content %}
+<h2 class="page-title">{{ title }}</h2>
+<form method="POST" class="form-card">
+  <label>Jeep no.</label>
+  <input
+    type="text"
+    name="jeep_no"
+    value="{{ jeep.jeep_no if jeep else '' }}"
+    required
+  />
+
+  <label>Plate no.</label>
+  <input
+    type="text"
+    name="plate_no"
+    value="{{ jeep.plate_no if jeep else '' }}"
+    required
+  />
+
+  <label>Route</label>
+  <input type="text" name="route" value="{{ jeep.route if jeep else '' }}" />
+
+  <label>Registration expiry</label>
+  <input
+    type="date"
+    name="registration_expiry"
+    value="{{ jeep.registration_expiry if jeep and jeep.registration_expiry else '' }}"
+  />
+
+  {% if error %}
+  <p class="error">{{ error }}</p>
+  {% endif %}
+  <button type="submit" class="btn">Save</button>
+  <a href="{{ url_for('jeeps_list') }}">Cancel</a>
+</form>
+{% endblock %}

@@ -179,3 +179,72 @@ input {
     padding-left: 18px;
     margin: 0;
 }
+
+.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.page-head .btn {
+    margin: 0;
+    text-decoration: none;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.table th,
+.table td {
+    padding: 10px;
+    border-bottom: 1px solid #7aa7bf;
+    text-align: left;
+}
+
+.table th {
+    background: rgba(59, 143, 184, 0.45);
+}
+
+.inline {
+    display: inline;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: 8px;
+    color: #b00020;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.form-card {
+    max-width: 420px;
+    padding: 20px;
+    background: rgba(59, 143, 184, 0.35);
+    border: 1px solid #1c3d6e;
+    border-radius: 8px;
+}
+
+label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.form-card .btn {
+    display: inline-block;
+    margin: 0 12px 0 0;
+}
+
+.flash {
+    padding: 10px;
+    background: #fff3cd;
+    border: 1px solid #c9a227;
+    border-radius: 6px;
+}
