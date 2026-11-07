@@ -704,5 +704,101 @@ def issues_delete(issue_id):
     db.close()
     return redirect(url_for("issues_list"))
 
+# ---------- TOP BAR: bell, search, profile ----------
+@app.context_processor
+def inject_topbar():
+    """Makes the bell's data available in every page."""
+    if "admin_id" not in session:
+        return {}
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    items = get_expiring(cur)
+    cur.close()
+    db.close()
+    return {"bell_items": items[:6], "bell_count": len(items)}
+
+@app.route("/search")
+@login_required
+def search():
+    q = (request.args.get("q") or "").strip()
+    results = {"jeeps": [], "drivers": [], "docs": [], "issues": []}
+    if q:
+        like = "%" + q + "%"
+        db = get_db()
+        cur = db.cursor(dictionary=True, buffered=True)
+
+        cur.execute("""
+            SELECT id, jeep_no, plate_no, route FROM jeeps
+            WHERE jeep_no LIKE %s OR plate_no LIKE %s OR route LIKE %s
+            ORDER BY jeep_no LIMIT 20
+        """, (like, like, like))
+        results["jeeps"] = cur.fetchall()
+
+        cur.execute("""
+            SELECT d.id, d.full_name, d.contact_no, d.license_no, j.jeep_no
+            FROM drivers d LEFT JOIN jeeps j ON d.jeep_id = j.id
+            WHERE d.full_name LIKE %s OR d.contact_no LIKE %s
+               OR d.license_no LIKE %s OR d.address LIKE %s
+            ORDER BY d.full_name LIMIT 20
+        """, (like, like, like, like))
+        results["drivers"] = cur.fetchall()
+
+        cur.execute("""
+            SELECT d.id, d.doc_type, d.doc_date, d.expiry_date,
+                   j.jeep_no, j.plate_no, dr.full_name AS driver_name
+            FROM documents d
+            LEFT JOIN jeeps j ON d.jeep_id = j.id
+            LEFT JOIN drivers dr ON d.driver_id = dr.id
+            WHERE d.doc_type LIKE %s OR j.plate_no LIKE %s OR j.jeep_no LIKE %s
+               OR dr.full_name LIKE %s
+            ORDER BY d.doc_date DESC LIMIT 20
+        """, (like, like, like, like))
+        results["docs"] = cur.fetchall()
+
+        cur.execute("""
+            SELECT i.id, i.issue_type, i.issue, i.status, i.date_broken,
+                   j.jeep_no, j.plate_no, dr.full_name AS driver_name
+            FROM issues i
+            JOIN jeeps j ON i.jeep_id = j.id
+            LEFT JOIN drivers dr ON i.driver_id = dr.id
+            WHERE i.issue LIKE %s OR i.shop_place LIKE %s OR i.technician LIKE %s
+               OR i.repair_details LIKE %s OR j.plate_no LIKE %s OR j.jeep_no LIKE %s
+               OR dr.full_name LIKE %s
+            ORDER BY i.date_broken DESC LIMIT 20
+        """, (like,) * 7)
+        results["issues"] = cur.fetchall()
+
+        cur.close()
+        db.close()
+    total = sum(len(v) for v in results.values())
+    return render_template("search.html", q=q, results=results, total=total)
+
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    error = None
+    try:
+        if request.method == "POST":
+            full_name = (request.form.get("full_name") or "").strip()
+            if not full_name:
+                error = "Name can't be empty."
+            else:
+                cur.execute(
+                    "UPDATE admin SET full_name=%s, position=%s, contact_no=%s WHERE id=%s",
+                    (full_name, request.form.get("position") or None,
+                     request.form.get("contact_no") or None, session["admin_id"]))
+                db.commit()
+                session["admin_name"] = full_name
+                flash("Profile saved.")
+                return redirect(url_for("profile"))
+        cur.execute("SELECT * FROM admin WHERE id = %s", (session["admin_id"],))
+        admin = cur.fetchone()
+        return render_template("profile.html", admin=admin, error=error)
+    finally:
+        cur.close()
+        db.close()
+
 if __name__ == "__main__":
     app.run(debug=True)

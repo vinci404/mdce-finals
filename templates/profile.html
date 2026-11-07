@@ -1,0 +1,23 @@
+{% extends "base.html" %} {% block title %}My profile{% endblock %} {% block
+content %}
+<h2 class="page-title">My profile</h2>
+<form method="POST" class="form-card">
+  <label>Email (used to log in)</label>
+  <input type="email" value="{{ admin.email }}" disabled />
+
+  <label>Full name</label>
+  <input type="text" name="full_name" value="{{ admin.full_name }}" required />
+
+  <label>Position</label>
+  <input type="text" name="position" value="{{ admin.position or '' }}" />
+
+  <label>Contact no.</label>
+  <input type="text" name="contact_no" value="{{ admin.contact_no or '' }}" />
+
+  {% if error %}
+  <p class="error">{{ error }}</p>
+  {% endif %}
+  <button type="submit" class="btn">Save</button>
+  <a href="{{ url_for('dashboard') }}">Cancel</a>
+</form>
+{% endblock %}

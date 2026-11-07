@@ -1,0 +1,106 @@
+{% extends "base.html" %} {% block title %}Search{% endblock %} {% block content
+%}
+<h2 class="page-title">Search results for "{{ q }}"</h2>
+
+{% if not q %}
+<p>Type something in the search bar above.</p>
+{% elif total == 0 %}
+<p>
+  Nothing found. Try a plate number, a driver's name, or a word from an issue.
+</p>
+{% endif %} {% if results.jeeps %}
+<h3>Jeeps</h3>
+<table class="table">
+  <tr>
+    <th>Jeep no.</th>
+    <th>Plate no.</th>
+    <th>Route</th>
+    <th></th>
+  </tr>
+  {% for j in results.jeeps %}
+  <tr>
+    <td>{{ j.jeep_no }}</td>
+    <td>{{ j.plate_no }}</td>
+    <td>{{ j.route or "-" }}</td>
+    <td><a href="{{ url_for('jeep_edit', jeep_id=j.id) }}">View / Edit</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %} {% if results.drivers %}
+<h3>Drivers</h3>
+<table class="table">
+  <tr>
+    <th>Name</th>
+    <th>Contact</th>
+    <th>License no.</th>
+    <th>Jeep no.</th>
+    <th></th>
+  </tr>
+  {% for d in results.drivers %}
+  <tr>
+    <td>{{ d.full_name }}</td>
+    <td>{{ d.contact_no or "-" }}</td>
+    <td>{{ d.license_no or "-" }}</td>
+    <td>{{ d.jeep_no or "-" }}</td>
+    <td>
+      <a href="{{ url_for('driver_edit', driver_id=d.id) }}">View / Edit</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %} {% if results.docs %}
+<h3>Documents</h3>
+<table class="table">
+  <tr>
+    <th>Type</th>
+    <th>Belongs to</th>
+    <th>Date</th>
+    <th>Expiry</th>
+    <th></th>
+  </tr>
+  {% for d in results.docs %}
+  <tr>
+    <td>{{ d.doc_type }}</td>
+    <td>
+      {% if d.jeep_no %}Jeep {{ d.jeep_no }} ({{ d.plate_no }}){% else %}{{
+      d.driver_name or "-" }}{% endif %}
+    </td>
+    <td>{{ d.doc_date or "-" }}</td>
+    <td>{{ d.expiry_date or "-" }}</td>
+    <td>
+      <a href="{{ url_for('docs_file', doc_id=d.id) }}" target="_blank"
+        >View file</a
+      >
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %} {% if results.issues %}
+<h3>Issues</h3>
+<table class="table">
+  <tr>
+    <th>Jeep</th>
+    <th>Driver</th>
+    <th>Issue</th>
+    <th>Date broken</th>
+    <th>Status</th>
+    <th></th>
+  </tr>
+  {% for i in results.issues %}
+  <tr>
+    <td>{{ i.jeep_no }} ({{ i.plate_no }})</td>
+    <td>{{ i.driver_name or "-" }}</td>
+    <td>{{ i.issue_type }}: {{ i.issue|truncate(40) }}</td>
+    <td>{{ i.date_broken }}</td>
+    <td>
+      <span class="badge {{ i.status|lower|replace(' ', '-') }}"
+        >{{ i.status }}</span
+      >
+    </td>
+    <td>
+      <a href="{{ url_for('issues_edit', issue_id=i.id) }}">View / Edit</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %} {% endblock %}
