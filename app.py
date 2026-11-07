@@ -2,11 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import mysql.connector
 import os
 import uuid
+from datetime import date
 from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "change-this-to-any-random-text"
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 
 
 def get_db():
@@ -459,6 +460,249 @@ def docs_delete(doc_id):
     cur.close()
     db.close()
     return redirect(url_for("docs_list"))
+
+
+# ---------- ISSUETRACK ----------
+ISSUE_DIR = os.path.join(app.root_path, "uploads", "issues")
+ISSUE_TYPES = ["Mechanical", "Route", "Gas", "Other"]
+ISSUE_STATUSES = ["Open", "In Progress", "Resolved"]
+PAID_BY = ["Company", "Driver"]
+ALLOWED_ISSUE_PHOTOS = {"png", "jpg", "jpeg", "webp"}
+
+def file_ext(f):
+    return f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else ""
+
+def save_issue_photos(cur, issue_id, files):
+    """Validate every chosen photo first, then save them all."""
+    files = [f for f in files if f and f.filename]
+    for f in files:
+        if file_ext(f) not in ALLOWED_ISSUE_PHOTOS:
+            raise ValueError("Photos must be png, jpg, jpeg or webp files.")
+    os.makedirs(ISSUE_DIR, exist_ok=True)
+    for f in files:
+        name = uuid.uuid4().hex + "." + file_ext(f)
+        f.save(os.path.join(ISSUE_DIR, name))
+        cur.execute("INSERT INTO issue_photos (issue_id, file_path) VALUES (%s, %s)",
+                    (issue_id, name))
+
+def clean_issue_form(f):
+    data = {
+        "jeep_id": int(f["jeep_id"]) if f.get("jeep_id") else None,
+        "issue_type": f.get("issue_type") if f.get("issue_type") in ISSUE_TYPES else "Other",
+        "issue": (f.get("issue") or "").strip(),
+        "status": f.get("status") if f.get("status") in ISSUE_STATUSES else "Open",
+        "date_broken": f.get("date_broken") or None,
+        "date_fixed": f.get("date_fixed") or None,
+        "cost": f.get("cost") or None,
+        "shop_place": f.get("shop_place") or None,
+        "technician": f.get("technician") or None,
+        "paid_by": f.get("paid_by") if f.get("paid_by") in PAID_BY else None,
+        "repair_details": f.get("repair_details") or None,
+        "substitute_jeep_id": int(f["substitute_jeep_id"]) if f.get("substitute_jeep_id") else None,
+    }
+    # A fixed date means the repair is done, so mark it Resolved automatically
+    if data["date_fixed"]:
+        data["status"] = "Resolved"
+    return data
+
+def validate_issue(d):
+    if not d["jeep_id"]:
+        return "Choose a jeep."
+    if not d["issue"]:
+        return "Describe the issue."
+    if not d["date_broken"]:
+        return "Enter the date broken."
+    if d["date_fixed"] and d["date_fixed"] < d["date_broken"]:
+        return "Date fixed can't be before date broken."
+    if d["cost"]:
+        try:
+            if float(d["cost"]) < 0:
+                return "Cost can't be negative."
+        except ValueError:
+            return "Cost must be a number."
+    if d["substitute_jeep_id"] and d["substitute_jeep_id"] == d["jeep_id"]:
+        return "The substitute jeep can't be the same jeep."
+    return None
+
+def issue_fields(d):
+    return (d["issue_type"], d["issue"], d["status"], d["date_broken"], d["date_fixed"],
+            d["cost"], d["shop_place"], d["technician"], d["paid_by"],
+            d["repair_details"], d["substitute_jeep_id"])
+
+@app.route("/issues")
+@login_required
+def issues_list():
+    status = request.args.get("status")
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    sql = """
+        SELECT i.*, j.jeep_no, j.plate_no, dr.full_name AS driver_name,
+               DATEDIFF(COALESCE(i.date_fixed, CURDATE()), i.date_broken) AS days_stopped
+        FROM issues i
+        JOIN jeeps j ON i.jeep_id = j.id
+        LEFT JOIN drivers dr ON i.driver_id = dr.id
+    """
+    order = " ORDER BY (i.status = 'Resolved'), i.date_broken DESC, i.id DESC"
+    if status in ISSUE_STATUSES:
+        cur.execute(sql + " WHERE i.status = %s" + order, (status,))
+    else:
+        status = None
+        cur.execute(sql + order)
+    rows = cur.fetchall()
+    cur.close()
+    db.close()
+    return render_template("issues.html", issues=rows, statuses=ISSUE_STATUSES,
+                           current_status=status)
+
+@app.route("/issues/add", methods=["GET", "POST"])
+@login_required
+def issues_add():
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    error = None
+    try:
+        if request.method == "POST":
+            data = clean_issue_form(request.form)
+            error = validate_issue(data)
+            if not error:
+                try:
+                    cur.execute("SELECT id FROM drivers WHERE jeep_id = %s", (data["jeep_id"],))
+                    drv = cur.fetchone()
+                    cur.execute("""
+                        INSERT INTO issues (jeep_id, driver_id, issue_type, issue, status,
+                            date_broken, date_fixed, cost, shop_place, technician, paid_by,
+                            repair_details, substitute_jeep_id)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    """, (data["jeep_id"], drv["id"] if drv else None) + issue_fields(data))
+                    save_issue_photos(cur, cur.lastrowid, request.files.getlist("photos"))
+                    db.commit()
+                    return redirect(url_for("issues_list"))
+                except ValueError as e:
+                    db.rollback()
+                    error = str(e)
+        cur.execute("SELECT id, jeep_no, plate_no FROM jeeps ORDER BY jeep_no")
+        jeeps = cur.fetchall()
+        return render_template("issue_form.html", issue=request.form, jeeps=jeeps,
+                               error=error, title="Add issue", editing=False,
+                               today=date.today().isoformat(), issue_types=ISSUE_TYPES,
+                               statuses=ISSUE_STATUSES, paid_by=PAID_BY,
+                               photos=[], history=[])
+    finally:
+        cur.close()
+        db.close()
+
+@app.route("/issues/<int:issue_id>", methods=["GET", "POST"])
+@login_required
+def issues_edit(issue_id):
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    error = None
+    try:
+        cur.execute("""
+            SELECT i.*, j.jeep_no, j.plate_no, dr.full_name AS driver_name,
+                   DATEDIFF(COALESCE(i.date_fixed, CURDATE()), i.date_broken) AS days_stopped
+            FROM issues i
+            JOIN jeeps j ON i.jeep_id = j.id
+            LEFT JOIN drivers dr ON i.driver_id = dr.id
+            WHERE i.id = %s
+        """, (issue_id,))
+        issue = cur.fetchone()
+        if not issue:
+            return redirect(url_for("issues_list"))
+
+        if request.method == "POST":
+            data = clean_issue_form(request.form)
+            data["jeep_id"] = issue["jeep_id"]
+            error = validate_issue(data)
+            if not error:
+                try:
+                    cur.execute("""
+                        UPDATE issues SET issue_type=%s, issue=%s, status=%s, date_broken=%s,
+                            date_fixed=%s, cost=%s, shop_place=%s, technician=%s, paid_by=%s,
+                            repair_details=%s, substitute_jeep_id=%s
+                        WHERE id=%s
+                    """, issue_fields(data) + (issue_id,))
+                    save_issue_photos(cur, issue_id, request.files.getlist("photos"))
+                    db.commit()
+                    flash("Issue saved.")
+                    return redirect(url_for("issues_list"))
+                except ValueError as e:
+                    db.rollback()
+                    error = str(e)
+            issue = {**issue, **request.form.to_dict()}
+
+        cur.execute("SELECT id, jeep_no, plate_no FROM jeeps ORDER BY jeep_no")
+        jeeps = cur.fetchall()
+        cur.execute("SELECT id FROM issue_photos WHERE issue_id = %s ORDER BY id", (issue_id,))
+        photos = cur.fetchall()
+        cur.execute("""
+            SELECT i.id, i.issue_type, i.issue, i.status, i.date_broken, i.date_fixed, i.cost,
+                   DATEDIFF(COALESCE(i.date_fixed, CURDATE()), i.date_broken) AS days_stopped
+            FROM issues i
+            WHERE i.jeep_id = %s AND i.id <> %s
+            ORDER BY i.date_broken DESC
+        """, (issue["jeep_id"], issue_id))
+        history = cur.fetchall()
+        return render_template("issue_form.html", issue=issue, jeeps=jeeps, error=error,
+                               title="Issue report", editing=True,
+                               today=date.today().isoformat(), issue_types=ISSUE_TYPES,
+                               statuses=ISSUE_STATUSES, paid_by=PAID_BY,
+                               photos=photos, history=history)
+    finally:
+        cur.close()
+        db.close()
+
+@app.route("/issues/photo/<int:photo_id>")
+@login_required
+def issues_photo(photo_id):
+    db = get_db()
+    cur = db.cursor(dictionary=True)
+    cur.execute("SELECT file_path FROM issue_photos WHERE id = %s", (photo_id,))
+    row = cur.fetchone()
+    cur.close()
+    db.close()
+    if not row:
+        abort(404)
+    return send_from_directory(ISSUE_DIR, row["file_path"])
+
+@app.route("/issues/photo/<int:photo_id>/delete", methods=["POST"])
+@login_required
+def issues_photo_delete(photo_id):
+    db = get_db()
+    cur = db.cursor(dictionary=True)
+    cur.execute("SELECT issue_id, file_path FROM issue_photos WHERE id = %s", (photo_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        db.close()
+        return redirect(url_for("issues_list"))
+    cur.execute("DELETE FROM issue_photos WHERE id = %s", (photo_id,))
+    db.commit()
+    try:
+        os.remove(os.path.join(ISSUE_DIR, row["file_path"]))
+    except OSError:
+        pass
+    cur.close()
+    db.close()
+    return redirect(url_for("issues_edit", issue_id=row["issue_id"]))
+
+@app.route("/issues/<int:issue_id>/delete", methods=["POST"])
+@login_required
+def issues_delete(issue_id):
+    db = get_db()
+    cur = db.cursor(dictionary=True)
+    cur.execute("SELECT file_path FROM issue_photos WHERE issue_id = %s", (issue_id,))
+    files = [r["file_path"] for r in cur.fetchall()]
+    cur.execute("DELETE FROM issues WHERE id = %s", (issue_id,))
+    db.commit()
+    for name in files:
+        try:
+            os.remove(os.path.join(ISSUE_DIR, name))
+        except OSError:
+            pass
+    cur.close()
+    db.close()
+    return redirect(url_for("issues_list"))
 
 if __name__ == "__main__":
     app.run(debug=True)

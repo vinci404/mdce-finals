@@ -1,0 +1,70 @@
+{% extends "base.html" %} {% block title %}IssueTrack{% endblock %} {% block
+content %}
+<div class="page-head">
+  <h2 class="page-title">IssueTrack - Issues</h2>
+  <a href="{{ url_for('issues_add') }}" class="btn">+ Add issue</a>
+</div>
+
+<div class="tabs">
+  <a
+    href="{{ url_for('issues_list') }}"
+    class="tab {% if not current_status %}active{% endif %}"
+    >All</a
+  >
+  {% for s in statuses %}
+  <a
+    href="{{ url_for('issues_list', status=s) }}"
+    class="tab {% if current_status == s %}active{% endif %}"
+    >{{ s }}</a
+  >
+  {% endfor %}
+</div>
+
+<table class="table">
+  <tr>
+    <th>Jeep</th>
+    <th>Driver</th>
+    <th>Issue</th>
+    <th>Date broken</th>
+    <th>Date fixed</th>
+    <th>Days stopped</th>
+    <th>Cost</th>
+    <th>Status</th>
+    <th></th>
+  </tr>
+  {% for i in issues %}
+  <tr>
+    <td>{{ i.jeep_no }} ({{ i.plate_no }})</td>
+    <td>{{ i.driver_name or "-" }}</td>
+    <td>{{ i.issue_type }}: {{ i.issue|truncate(40) }}</td>
+    <td>{{ i.date_broken }}</td>
+    <td>{{ i.date_fixed or "-" }}</td>
+    <td>{{ i.days_stopped }}{% if not i.date_fixed %} (ongoing){% endif %}</td>
+    <td>
+      {% if i.cost is not none %}₱{{ "{:,.2f}".format(i.cost) }}{% else %}-{%
+      endif %}
+    </td>
+    <td>
+      <span class="badge {{ i.status|lower|replace(' ', '-') }}"
+        >{{ i.status }}</span
+      >
+    </td>
+    <td>
+      <a href="{{ url_for('issues_edit', issue_id=i.id) }}">View/Edit</a>
+      <form
+        method="POST"
+        action="{{ url_for('issues_delete', issue_id=i.id) }}"
+        class="inline"
+        onsubmit="return confirm('Delete this issue report?');"
+      >
+        <button type="submit" class="link-btn">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr>
+    <td colspan="9">No issues yet. Click "+ Add issue".</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

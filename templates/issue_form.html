@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h2 class="page-title">{{ title }}</h2>
+
+<form method="POST" enctype="multipart/form-data" class="form-card wide">
+  <div class="form-grid">
+    <div>
+      <label>Jeep</label>
+      {% if editing %}
+        <input type="text" value="{{ issue.jeep_no }} - {{ issue.plate_no }}" disabled>
+      {% else %}
+        <select name="jeep_id" required>
+          <option value="">- choose -</option>
+          {% for j in jeeps %}
+            <option value="{{ j.id }}" {% if issue.get('jeep_id')|string == j.id|string %}selected{% endif %}>
+              {{ j.jeep_no }} - {{ j.plate_no }}
+            </option>
+          {% endfor %}
+        </select>
+      {% endif %}
+    </div>
+
+    <div>
+      <label>Driver</label>
+      {% if editing %}
+        <input type="text" value="{{ issue.driver_name or '-' }}" disabled>
+      {% else %}
+        <input type="text" value="Recorded automatically from the jeep" disabled>
+      {% endif %}
+    </div>
+
+    <div>
+      <label>Issue type</label>
+      <select name="issue_type">
+        {% for t in issue_types %}
+          <option value="{{ t }}" {% if issue.get('issue_type') == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Status</label>
+      <select name="status">
+        {% for s in statuses %}
+          <option value="{{ s }}" {% if issue.get('status') == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Date broken</label>
+      <input type="date" name="date_broken" value="{{ issue.get('date_broken') or today }}" required>
+    </div>
+
+    <div>
+      <label>Date fixed</label>
+      <input type="date" name="date_fixed" value="{{ issue.get('date_fixed') or '' }}">
+    </div>
+
+    <div>
+      <label>Shop / place</label>
+      <input type="text" name="shop_place" value="{{ issue.get('shop_place') or '' }}">
+    </div>
+
+    <div>
+      <label>Technician / personnel</label>
+      <input type="text" name="technician" value="{{ issue.get('technician') or '' }}">
+    </div>
+
+    <div>
+      <label>Cost (₱)</label>
+      <input type="number" step="0.01" min="0" name="cost" value="{{ issue.get('cost') or '' }}">
+    </div>
+
+    <div>
+      <label>Sponsor / who pays</label>
+      <select name="paid_by">
+        <option value="">- not set -</option>
+        {% for p in paid_by %}
+          <option value="{{ p }}" {% if issue.get('paid_by') == p %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Substitute jeep used</label>
+      <select name="substitute_jeep_id">
+        <option value="">- none -</option>
+        {% for j in jeeps %}
+          <option value="{{ j.id }}" {% if issue.get('substitute_jeep_id')|string == j.id|string %}selected{% endif %}>
+            {{ j.jeep_no }} - {{ j.plate_no }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>What was bought / fixed</label>
+      <input type="text" name="repair_details" value="{{ issue.get('repair_details') or '' }}">
+    </div>
+
+    <div class="full">
+      <label>Issue description</label>
+      <textarea name="issue" rows="3" required>{{ issue.get('issue') or '' }}</textarea>
+    </div>
+
+    <div class="full">
+      <label>Add photos (you can choose several)</label>
+      <input type="file" name="photos" accept="image/*" multiple>
+    </div>
+  </div>
+
+  {% if editing %}
+    <p>Time span: <strong>{{ issue.days_stopped }} day(s)</strong>{% if not issue.date_fixed %} so far (not fixed yet){% endif %}</p>
+  {% endif %}
+
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <button type="submit" class="btn">Save</button>
+  <a href="{{ url_for('issues_list') }}">Cancel</a>
+</form>
+
+{% if editing %}
+<div class="card" style="margin-top:16px">
+  <h3>Photos</h3>
+  {% if photos %}
+    <div class="photos">
+      {% for p in photos %}
+        <div class="photo-box">
+          <a href="{{ url_for('issues_photo', photo_id=p.id) }}" target="_blank">
+            <img src="{{ url_for('issues_photo', photo_id=p.id) }}" class="photo" alt="">
+          </a>
+          <form method="POST" action="{{ url_for('issues_photo_delete', photo_id=p.id) }}"
+                onsubmit="return confirm('Delete this photo?')">
+            <button type="submit" class="link-btn">Delete</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No photos yet. Choose some above and click Save.</p>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h3>History of Jeep {{ issue.jeep_no }}</h3>
+  {% if history %}
+    <table class="table">
+      <tr><th>Date broken</th><th>Issue</th><th>Days stopped</th><th>Cost</th><th>Status</th><th></th></tr>
+      {% for h in history %}
+      <tr>
+        <td>{{ h.date_broken }}</td>
+        <td>{{ h.issue_type }}: {{ h.issue|truncate(40) }}</td>
+        <td>{{ h.days_stopped }}{% if not h.date_fixed %} (ongoing){% endif %}</td>
+        <td>{% if h.cost is not none %}₱{{ "{:,.2f}".format(h.cost) }}{% else %}-{% endif %}</td>
+        <td><span class="badge {{ h.status|lower|replace(' ', '-') }}">{{ h.status }}</span></td>
+        <td><a href="{{ url_for('issues_edit', issue_id=h.id) }}">View/Edit</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No earlier issues for this jeep.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

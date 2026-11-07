@@ -323,3 +323,63 @@ select {
     font-weight: bold;
     margin-left: 6px;
 }
+
+textarea {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 14px;
+    border: 1px solid #7aa7bf;
+    border-radius: 6px;
+    background: #f3f7fa;
+    font-family: inherit;
+    font-size: 15px;
+    resize: vertical;
+}
+
+input:disabled {
+    background: #e6eef3;
+    color: #1c3d6e;
+}
+
+.full {
+    grid-column: 1 / -1;
+}
+
+.badge {
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    border: 1px solid #1c3d6e;
+    background: #fff;
+}
+
+.badge.open {
+    background: #f8d7da;
+}
+
+.badge.in-progress {
+    background: #fff3cd;
+}
+
+.badge.resolved {
+    background: #d4edda;
+}
+
+.photos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.photo-box {
+    text-align: center;
+}
+
+.photo {
+    width: 140px;
+    height: 110px;
+    object-fit: cover;
+    display: block;
+    border: 1px solid #1c3d6e;
+    border-radius: 6px;
+}
