@@ -466,3 +466,79 @@ input:disabled {
     font-weight: bold;
     border: 1px solid #1c3d6e;
 }
+
+.avatar {
+    object-fit: cover;
+    display: block;
+}
+
+.user-icon {
+    overflow: hidden;
+}
+
+.user-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-card {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 28px;
+    border: 2px solid #3b8fb8;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #e3eef5, #7fb3d0);
+}
+
+.profile-card h2 {
+    margin: 0 0 4px;
+    font-size: 28px;
+}
+
+.profile-card p {
+    margin: 6px 0;
+}
+
+.muted {
+    opacity: 0.8;
+}
+
+.profile-photo {
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 2px solid #1c3d6e;
+    background: #fff;
+}
+
+.profile-photo.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 56px;
+    color: #3b8fb8;
+}
+
+.edit-box {
+    margin-top: 16px;
+}
+
+.edit-box summary {
+    display: inline-block;
+    cursor: pointer;
+    list-style: none;
+    margin-bottom: 12px;
+    padding: 8px 18px;
+    background: #3b8fb8;
+    color: #fff;
+    border: 1px solid #1c3d6e;
+    border-radius: 6px;
+}
+
+.edit-box summary::-webkit-details-marker {
+    display: none;
+}

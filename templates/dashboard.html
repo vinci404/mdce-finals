@@ -1,6 +1,6 @@
 {% extends "base.html" %} {% block title %}MDCE FleetHub - Dashboard{% endblock
 %} {% block content %}
-<h2 class="page-title">Good day, {{ name }}!</h2>
+<h2 class="page-title">{{ greeting }}, {{ name.split(' ')[0] }}!</h2>
 
 <div class="cards">
   <div class="card">

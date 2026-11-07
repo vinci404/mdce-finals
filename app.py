@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import mysql.connector
 import os
 import uuid
-from datetime import date
+from datetime import date, datetime
 from functools import wraps
 
 app = Flask(__name__)
@@ -68,7 +68,12 @@ def dashboard():
 
     cur.close()
     db.close()
-    return render_template("dashboard.html", name=session["admin_name"],
+
+    hour = datetime.now().hour
+    greeting = ("Good morning" if hour < 12
+                else "Good afternoon" if hour < 18
+                else "Good evening")
+    return render_template("dashboard.html", name=session["admin_name"], greeting=greeting,
                            jeeps=jeeps, drivers=drivers, docs=docs, expiring=expiring)
 
 @app.route("/logout")
@@ -705,17 +710,21 @@ def issues_delete(issue_id):
     return redirect(url_for("issues_list"))
 
 # ---------- TOP BAR: bell, search, profile ----------
+
 @app.context_processor
 def inject_topbar():
-    """Makes the bell's data available in every page."""
+    """Makes the bell and photo data available in every page."""
     if "admin_id" not in session:
         return {}
     db = get_db()
     cur = db.cursor(dictionary=True, buffered=True)
     items = get_expiring(cur)
+    cur.execute("SELECT photo_path FROM admin WHERE id = %s", (session["admin_id"],))
+    me = cur.fetchone()
     cur.close()
     db.close()
-    return {"bell_items": items[:6], "bell_count": len(items)}
+    return {"bell_items": items[:6], "bell_count": len(items),
+            "my_photo": me["photo_path"] if me else None}
 
 @app.route("/search")
 @login_required
@@ -773,6 +782,19 @@ def search():
     total = sum(len(v) for v in results.values())
     return render_template("search.html", q=q, results=results, total=total)
 
+ADMIN_PHOTO_DIR = os.path.join(app.root_path, "static", "uploads", "admins")
+
+def save_admin_photo(file):
+    if not file or file.filename == "":
+        return None
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ALLOWED_PHOTOS:
+        raise ValueError("Photo must be a png, jpg, jpeg or webp file.")
+    os.makedirs(ADMIN_PHOTO_DIR, exist_ok=True)
+    name = uuid.uuid4().hex + "." + ext
+    file.save(os.path.join(ADMIN_PHOTO_DIR, name))
+    return "uploads/admins/" + name
+
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
@@ -780,25 +802,35 @@ def profile():
     cur = db.cursor(dictionary=True, buffered=True)
     error = None
     try:
+        cur.execute("SELECT * FROM admin WHERE id = %s", (session["admin_id"],))
+        admin = cur.fetchone()
         if request.method == "POST":
             full_name = (request.form.get("full_name") or "").strip()
             if not full_name:
                 error = "Name can't be empty."
             else:
-                cur.execute(
-                    "UPDATE admin SET full_name=%s, position=%s, contact_no=%s WHERE id=%s",
-                    (full_name, request.form.get("position") or None,
-                     request.form.get("contact_no") or None, session["admin_id"]))
-                db.commit()
-                session["admin_name"] = full_name
-                flash("Profile saved.")
-                return redirect(url_for("profile"))
-        cur.execute("SELECT * FROM admin WHERE id = %s", (session["admin_id"],))
-        admin = cur.fetchone()
+                try:
+                    photo = save_admin_photo(request.files.get("photo")) or admin["photo_path"]
+                except ValueError as e:
+                    error = str(e)
+                else:
+                    cur.execute("""
+                        UPDATE admin SET full_name=%s, position=%s, contact_no=%s,
+                            address=%s, photo_path=%s
+                        WHERE id=%s
+                    """, (full_name, request.form.get("position") or None,
+                          request.form.get("contact_no") or None,
+                          request.form.get("address") or None,
+                          photo, session["admin_id"]))
+                    db.commit()
+                    session["admin_name"] = full_name
+                    flash("Profile saved.")
+                    return redirect(url_for("profile"))
         return render_template("profile.html", admin=admin, error=error)
     finally:
         cur.close()
         db.close()
 
+        
 if __name__ == "__main__":
     app.run(debug=True)

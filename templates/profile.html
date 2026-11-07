@@ -1,23 +1,54 @@
 {% extends "base.html" %} {% block title %}My profile{% endblock %} {% block
 content %}
-<h2 class="page-title">My profile</h2>
-<form method="POST" class="form-card">
-  <label>Email (used to log in)</label>
-  <input type="email" value="{{ admin.email }}" disabled />
-
-  <label>Full name</label>
-  <input type="text" name="full_name" value="{{ admin.full_name }}" required />
-
-  <label>Position</label>
-  <input type="text" name="position" value="{{ admin.position or '' }}" />
-
-  <label>Contact no.</label>
-  <input type="text" name="contact_no" value="{{ admin.contact_no or '' }}" />
-
-  {% if error %}
-  <p class="error">{{ error }}</p>
+<div class="profile-card">
+  {% if admin.photo_path %}
+  <img
+    src="{{ url_for('static', filename=admin.photo_path) }}"
+    class="profile-photo"
+    alt=""
+  />
+  {% else %}
+  <div class="profile-photo placeholder">{{ admin.full_name[:1]|upper }}</div>
   {% endif %}
-  <button type="submit" class="btn">Save</button>
-  <a href="{{ url_for('dashboard') }}">Cancel</a>
-</form>
+  <div>
+    <h2>{{ admin.full_name }}</h2>
+    <p class="muted">{{ admin.position or "Staff" }}</p>
+    <p>📍 {{ admin.address or "-" }}</p>
+    <p>📞 {{ admin.contact_no or "-" }}</p>
+    <p>✉ {{ admin.email }}</p>
+  </div>
+</div>
+
+<details class="edit-box" {% if error %}open{% endif %}>
+  <summary>✎ Edit profile</summary>
+  <form method="POST" enctype="multipart/form-data" class="form-card">
+    <label>Photo</label>
+    <input type="file" name="photo" accept="image/*" />
+
+    <label>Full name</label>
+    <input
+      type="text"
+      name="full_name"
+      value="{{ admin.full_name }}"
+      required
+    />
+
+    <label>Position</label>
+    <input type="text" name="position" value="{{ admin.position or '' }}" />
+
+    <label>Contact no.</label>
+    <input type="text" name="contact_no" value="{{ admin.contact_no or '' }}" />
+
+    <label>Address</label>
+    <input type="text" name="address" value="{{ admin.address or '' }}" />
+
+    <label>Email (used to log in)</label>
+    <input type="email" value="{{ admin.email }}" disabled />
+
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+    <button type="submit" class="btn">Save</button>
+  </form>
+</details>
 {% endblock %}

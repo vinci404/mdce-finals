@@ -15,7 +15,15 @@
       <aside class="sidebar">
         <h1 class="brand">MDCE</h1>
         <div class="profile">
+          {% if my_photo %}
+          <img
+            src="{{ url_for('static', filename=my_photo) }}"
+            class="avatar"
+            alt=""
+          />
+          {% else %}
           <div class="avatar"></div>
+          {% endif %}
           <div class="profile-name">{{ session.admin_name }}</div>
         </div>
         <nav>
@@ -85,8 +93,15 @@
             href="{{ url_for('profile') }}"
             class="user-icon"
             title="My profile"
-            >{{ session.admin_name[:1]|upper }}</a
           >
+            {% if my_photo %}
+            <img
+              src="{{ url_for('static', filename=my_photo) }}"
+              class="user-img"
+              alt=""
+            />
+            {% else %} {{ session.admin_name[:1]|upper }} {% endif %}
+          </a>
         </div>
 
         {% with messages = get_flashed_messages() %} {% for m in messages %}
