@@ -1,3 +1,5 @@
+import re
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
 import mysql.connector
 import os
@@ -27,27 +29,37 @@ def login_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+def password_ok(stored, given):
+    """Old plain-text passwords still work once, then get upgraded to a hash."""
+    if stored.startswith(("scrypt:", "pbkdf2:")):
+        return check_password_hash(stored, given)
+    return stored == given
+
 @app.route("/", methods=["GET", "POST"])
 def login():
     error = None
     if request.method == "POST":
-        email = request.form["email"]
+        email = request.form["email"].strip().lower()
         password = request.form["password"]
 
         db = get_db()
-        cursor = db.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT * FROM admin WHERE email = %s AND password = %s",
-            (email, password)
-        )
-        user = cursor.fetchone()
-        cursor.close()
-        db.close()
+        cur = db.cursor(dictionary=True, buffered=True)
+        cur.execute("SELECT * FROM admin WHERE email = %s", (email,))
+        user = cur.fetchone()
 
-        if user:
+        if user and password_ok(user["password"], password):
+            if not user["password"].startswith(("scrypt:", "pbkdf2:")):
+                cur.execute("UPDATE admin SET password = %s WHERE id = %s",
+                            (generate_password_hash(password), user["id"]))
+                db.commit()
+            cur.close()
+            db.close()
             session["admin_id"] = user["id"]
             session["admin_name"] = user["full_name"]
             return redirect(url_for("dashboard"))
+
+        cur.close()
+        db.close()
         error = "Wrong email or password."
     return render_template("login.html", error=error)
 
@@ -831,6 +843,52 @@ def profile():
         cur.close()
         db.close()
 
+# ---------- REGISTER ----------
+REGISTRATION_CODE = "MDCE-2026"   # change this; give it only to MDCE staff
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+PHONE_RE = re.compile(r"^[0-9+\-\s]{7,20}$")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    error = None
+    if request.method == "POST":
+        f = request.form
+        full_name = f.get("full_name", "").strip()
+        email = f.get("email", "").strip().lower()
+        contact = f.get("contact_no", "").strip()
+        password = f.get("password", "")
+
+        if len(full_name) < 2:
+            error = "Please enter your full name."
+        elif not EMAIL_RE.match(email):
+            error = "Please enter a valid email address."
+        elif contact and not PHONE_RE.match(contact):
+            error = "Contact no. should only have numbers (7 to 20 digits)."
+        elif len(password) < 8:
+            error = "Password must be at least 8 characters."
+        elif password != f.get("confirm", ""):
+            error = "The two passwords don't match."
+        elif f.get("code", "").strip() != REGISTRATION_CODE:
+            error = "Wrong registration code. Ask MDCE for the code."
+        else:
+            db = get_db()
+            cur = db.cursor()
+            try:
+                cur.execute("""
+                    INSERT INTO admin (email, password, full_name, position, contact_no, address)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (email, generate_password_hash(password), full_name,
+                      f.get("position", "").strip() or None, contact or None,
+                      f.get("address", "").strip() or None))
+                db.commit()
+                flash("Account created. You can log in now.")
+                return redirect(url_for("login"))
+            except mysql.connector.IntegrityError:
+                error = "That email is already registered."
+            finally:
+                cur.close()
+                db.close()
+    return render_template("register.html", form=request.form, error=error)
         
 if __name__ == "__main__":
     app.run(debug=True)

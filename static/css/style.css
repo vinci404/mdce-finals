@@ -542,3 +542,16 @@ input:disabled {
 .edit-box summary::-webkit-details-marker {
     display: none;
 }
+
+.login-card.wide {
+    width: 420px;
+}
+
+.center {
+    text-align: center;
+    font-size: 14px;
+}
+
+.login-card a {
+    color: #1c3d6e;
+}

@@ -1,0 +1,76 @@
+{% extends "base.html" %} {% block title %}MDCE FleetHub - Register{% endblock
+%} {% block public %}
+<div class="login-page">
+  <div class="login-card wide">
+    <h2>Create an account</h2>
+    <form method="POST">
+      <input
+        type="text"
+        name="full_name"
+        placeholder="Full name"
+        required
+        minlength="2"
+        maxlength="100"
+        value="{{ form.get('full_name', '') }}"
+      />
+      <input
+        type="email"
+        name="email"
+        placeholder="Email"
+        required
+        maxlength="100"
+        value="{{ form.get('email', '') }}"
+      />
+      <input
+        type="text"
+        name="address"
+        placeholder="Address"
+        maxlength="255"
+        value="{{ form.get('address', '') }}"
+      />
+      <input
+        type="tel"
+        name="contact_no"
+        placeholder="Contact no. (e.g. 09123456789)"
+        pattern="[0-9+\-\s]{7,20}"
+        title="Numbers only, 7 to 20 characters"
+        value="{{ form.get('contact_no', '') }}"
+      />
+      <input
+        type="text"
+        name="position"
+        placeholder="Position (e.g. Secretary)"
+        maxlength="50"
+        value="{{ form.get('position', '') }}"
+      />
+      <input
+        type="password"
+        name="password"
+        placeholder="Password (at least 8 characters)"
+        required
+        minlength="8"
+      />
+      <input
+        type="password"
+        name="confirm"
+        placeholder="Confirm password"
+        required
+        minlength="8"
+      />
+      <input
+        type="text"
+        name="code"
+        placeholder="Registration code (ask MDCE)"
+        required
+      />
+      <button type="submit" class="btn">Register</button>
+    </form>
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+    <p class="center">
+      Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
