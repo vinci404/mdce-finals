@@ -8,7 +8,7 @@ from datetime import date, datetime
 from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = "change-this-to-any-random-text"
+app.secret_key = "winter-mydear-summer-mybaby-barkey-hinditayo-mapapakain-ng-pasion-na-yan-9x7q"
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 
 
