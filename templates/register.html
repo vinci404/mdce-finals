@@ -3,74 +3,85 @@
 <div class="login-page">
   <div class="login-card wide">
     <h2>Create an account</h2>
-    <form method="POST">
+    <form method="POST" novalidate>
       <input
         type="text"
         name="full_name"
-        placeholder="Full name"
-        required
-        minlength="2"
-        maxlength="100"
+        data-field="name"
+        maxlength="50"
+        placeholder="Full name (e.g. Juan D. Cruz Jr.)"
         value="{{ form.get('full_name', '') }}"
       />
       <input
-        type="email"
+        type="text"
         name="email"
-        placeholder="Email"
-        required
-        maxlength="100"
+        data-field="email"
+        maxlength="50"
+        placeholder="Email (e.g. name@gmail.com)"
         value="{{ form.get('email', '') }}"
       />
+
+      {% include "_address_fields.html" %}
+
       <input
         type="text"
-        name="address"
-        placeholder="Address"
-        maxlength="255"
-        value="{{ form.get('address', '') }}"
-      />
-      <input
-        type="tel"
         name="contact_no"
-        placeholder="Contact no. (e.g. 09123456789)"
-        pattern="[0-9+\-\s]{7,20}"
-        title="Numbers only, 7 to 20 characters"
+        data-field="contact"
+        inputmode="numeric"
+        maxlength="11"
+        placeholder="Contact no. (09XXXXXXXXX)"
         value="{{ form.get('contact_no', '') }}"
       />
-      <input
-        type="text"
-        name="position"
-        placeholder="Position (e.g. Secretary)"
-        maxlength="50"
-        value="{{ form.get('position', '') }}"
-      />
-      <input
-        type="password"
-        name="password"
-        placeholder="Password (at least 8 characters)"
-        required
-        minlength="8"
-      />
-      <input
-        type="password"
-        name="confirm"
-        placeholder="Confirm password"
-        required
-        minlength="8"
-      />
+
+      {% include "_position_field.html" %}
+
+      <div class="pw">
+        <input
+          type="password"
+          name="password"
+          id="password"
+          data-field="password"
+          maxlength="20"
+          placeholder="Password (6-20 characters, no spaces)"
+        />
+        <button type="button" class="show-btn" data-target="password">
+          Show
+        </button>
+      </div>
+      <div class="pw">
+        <input
+          type="password"
+          name="confirm"
+          id="confirm"
+          data-field="confirm"
+          maxlength="20"
+          placeholder="Confirm password"
+        />
+        <button type="button" class="show-btn" data-target="confirm">
+          Show
+        </button>
+      </div>
+
       <input
         type="text"
         name="code"
         placeholder="Registration code (ask MDCE)"
-        required
+        autocomplete="off"
       />
       <button type="submit" class="btn">Register</button>
     </form>
-    {% if error %}
-    <p class="error">{{ error }}</p>
+
+    {% if errors %}
+    <ul class="error-list">
+      {% for e in errors %}
+      <li>{{ e }}</li>
+      {% endfor %}
+    </ul>
     {% endif %}
     <p class="center">
       Already have an account? <a href="{{ url_for('login') }}">Log in</a>
     </p>
   </div>
 </div>
+<script src="{{ url_for('static', filename='js/forms.js') }}"></script>
 {% endblock %}

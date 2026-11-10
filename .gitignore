@@ -224,3 +224,5 @@ __pycache__/
 .vscode/
 static/uploads/*
 !static/uploads/.gitkeep
+
+secrets_config.py

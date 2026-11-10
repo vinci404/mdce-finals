@@ -22,7 +22,7 @@ block content %} {% include "_fleet_tabs.html" %}
     <td>{{ j.driver_name or "-" }}</td>
     <td>{{ j.registration_expiry or "-" }}</td>
     <td>
-      <a href="{{ url_for('jeep_edit', jeep_id=j.id) }}">Edit</a>
+      <a href="{{ url_for('jeep_edit', jeep_id=j.id) }}" class="btn-sm">Edit</a>
       <form
         method="POST"
         action="{{ url_for('jeep_delete', jeep_id=j.id) }}"

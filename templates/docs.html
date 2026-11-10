@@ -43,7 +43,12 @@ content %}
       and d.days_left <= 30 %}<span class="soon">Expiring soon</span>{% endif %}
     </td>
     <td>
-      <a href="{{ url_for('docs_file', doc_id=d.id) }}" target="_blank">View</a>
+      <a
+        href="{{ url_for('docs_file', doc_id=d.id) }}"
+        target="_blank"
+        class="btn-sm"
+        >View</a
+      >
     </td>
     <td>
       <form

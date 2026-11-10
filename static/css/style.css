@@ -555,3 +555,99 @@ input:disabled {
 .login-card a {
     color: #1c3d6e;
 }
+
+[hidden] {
+    display: none !important;
+}
+
+.btn-sm {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 14px;
+    text-decoration: none;
+    background: #3b8fb8;
+    color: #fff;
+    border: 1px solid #1c3d6e;
+    border-radius: 5px;
+}
+
+.btn-sm:hover {
+    background: #1c3d6e;
+}
+
+.pw {
+    position: relative;
+    margin-bottom: 14px;
+}
+
+.pw input {
+    margin-bottom: 0;
+    padding-right: 64px;
+}
+
+.show-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #1c3d6e;
+    font-family: inherit;
+    font-size: 13px;
+    text-decoration: underline;
+}
+
+.hint {
+    display: block;
+    color: #b00020;
+    font-size: 13px;
+    margin: -8px 0 10px;
+    white-space: pre-line;
+}
+
+.hint:empty {
+    display: none;
+}
+
+input.invalid {
+    border-color: #b00020;
+}
+
+input.valid {
+    border-color: #2e7d32;
+}
+
+.error-list {
+    color: #b00020;
+    font-size: 14px;
+    padding-left: 18px;
+    margin: 8px 0;
+}
+
+.check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.check input {
+    width: auto;
+    margin: 0;
+}
+
+.login-card.wide {
+    width: 420px;
+}
+
+.center {
+    text-align: center;
+    font-size: 14px;
+}
+
+.login-card a {
+    color: #1c3d6e;
+}

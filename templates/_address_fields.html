@@ -1,0 +1,17 @@
+<label>Municipality / City (Cavite, Batangas, Rizal, Quezon: choose "Other")</label>
+<select name="municipality" data-other="muni_other">
+  <option value="">- choose -</option>
+  {% for m in lgus %}
+    {% set sel = 'selected' if vals.muni == m else '' %}
+    <option value="{{ m }}" {{ sel }}>{{ m }}</option>
+  {% endfor %}
+  {% set other_sel = 'selected' if vals.muni == 'Other' else '' %}
+  <option value="Other" {{ other_sel }}>Other (type it)</option>
+</select>
+<input type="text" name="municipality_other" id="muni_other" maxlength="60"
+       placeholder="Type your municipality / city" value="{{ vals.muni_other }}" hidden>
+
+<label>Region</label>
+<select name="region">
+  {% for r in regions %}<option value="{{ r }}" selected>{{ r }}</option>{% endfor %}
+</select>

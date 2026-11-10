@@ -50,7 +50,9 @@ content %}
       >
     </td>
     <td>
-      <a href="{{ url_for('issues_edit', issue_id=i.id) }}">View/Edit</a>
+      <a href="{{ url_for('issues_edit', issue_id=i.id) }}" class="btn-sm"
+        >View / Edit</a
+      >
       <form
         method="POST"
         action="{{ url_for('issues_delete', issue_id=i.id) }}"

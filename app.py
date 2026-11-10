@@ -1,6 +1,8 @@
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, make_response, jsonify
+from validators import (POSITIONS, LAGUNA_LGUS, REGIONS, FIELD_CHECKS, clean_name, validate_password,
+                        validate_email, validate_person, form_vals, vals_from_admin)
 import mysql.connector
 import os
 import uuid
@@ -8,7 +10,11 @@ from datetime import date, datetime
 from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = "winter-mydear-summer-mybaby-barkey-hinditayo-mapapakain-ng-pasion-na-yan-9x7q"
+try:
+    from secrets_config import SECRET_KEY, REGISTRATION_CODE
+except ImportError:
+    SECRET_KEY, REGISTRATION_CODE = "dev-only-key", None
+app.secret_key = SECRET_KEY
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 
 
@@ -38,6 +44,7 @@ def password_ok(stored, given):
 @app.route("/", methods=["GET", "POST"])
 def login():
     error = None
+    remembered = request.cookies.get("remember_email", "")
     if request.method == "POST":
         email = request.form["email"].strip().lower()
         password = request.form["password"]
@@ -56,12 +63,19 @@ def login():
             db.close()
             session["admin_id"] = user["id"]
             session["admin_name"] = user["full_name"]
-            return redirect(url_for("dashboard"))
+            resp = make_response(redirect(url_for("dashboard")))
+            if request.form.get("remember"):
+                resp.set_cookie("remember_email", email, max_age=30 * 24 * 3600,
+                                httponly=True, samesite="Lax")
+            else:
+                resp.delete_cookie("remember_email")
+            return resp
 
         cur.close()
         db.close()
         error = "Wrong email or password."
-    return render_template("login.html", error=error)
+        remembered = email
+    return render_template("login.html", error=error, remembered=remembered)
 
 @app.route("/dashboard")
 @login_required
@@ -812,83 +826,118 @@ def save_admin_photo(file):
 def profile():
     db = get_db()
     cur = db.cursor(dictionary=True, buffered=True)
-    error = None
+    errors = []
     try:
         cur.execute("SELECT * FROM admin WHERE id = %s", (session["admin_id"],))
         admin = cur.fetchone()
+        vals = vals_from_admin(admin)
         if request.method == "POST":
-            full_name = (request.form.get("full_name") or "").strip()
-            if not full_name:
-                error = "Name can't be empty."
-            else:
+            f = request.form
+            vals = form_vals(f)
+            person, errors = validate_person(f)
+            if not errors:
+                cur.execute("SELECT id FROM admin WHERE contact_no = %s AND id <> %s",
+                            (person["contact_no"], admin["id"]))
+                if cur.fetchone():
+                    errors.append("That contact number is already registered.")
+            photo = admin["photo_path"]
+            if not errors:
                 try:
-                    photo = save_admin_photo(request.files.get("photo")) or admin["photo_path"]
+                    photo = save_admin_photo(request.files.get("photo")) or photo
                 except ValueError as e:
-                    error = str(e)
-                else:
-                    cur.execute("""
-                        UPDATE admin SET full_name=%s, position=%s, contact_no=%s,
-                            address=%s, photo_path=%s
-                        WHERE id=%s
-                    """, (full_name, request.form.get("position") or None,
-                          request.form.get("contact_no") or None,
-                          request.form.get("address") or None,
-                          photo, session["admin_id"]))
-                    db.commit()
-                    session["admin_name"] = full_name
-                    flash("Profile saved.")
-                    return redirect(url_for("profile"))
-        return render_template("profile.html", admin=admin, error=error)
+                    errors.append(str(e))
+            if not errors:
+                cur.execute("""
+                    UPDATE admin SET full_name=%s, position=%s, contact_no=%s,
+                        address=%s, photo_path=%s
+                    WHERE id=%s
+                """, (person["full_name"], person["position"], person["contact_no"],
+                      person["address"], photo, session["admin_id"]))
+                db.commit()
+                session["admin_name"] = person["full_name"]
+                flash("Profile saved.")
+                return redirect(url_for("profile"))
+        return render_template("profile.html", admin=admin, vals=vals, errors=errors,
+                               form=request.form, positions=POSITIONS, lgus=LAGUNA_LGUS,
+                               regions=REGIONS)
     finally:
         cur.close()
         db.close()
 
 # ---------- REGISTER ----------
-REGISTRATION_CODE = "MDCE-2026"   # change this; give it only to MDCE staff
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-PHONE_RE = re.compile(r"^[0-9+\-\s]{7,20}$")
+@app.route("/check_field", methods=["POST"])
+def check_field():
+    """Live check of ONE box while the user types (same idea as check_field.php)."""
+    field = request.form.get("field", "")
+    value = request.form.get("value", "")
+    if field in FIELD_CHECKS:
+        value = value.strip()
+        if field == "name":
+            value = clean_name(value)
+        errors = FIELD_CHECKS[field](value)
+    elif field == "password":
+        errors = validate_password(value)
+    elif field == "confirm":
+        other = request.form.get("other", "")
+        if value == "":
+            errors = ["Please confirm your password."]
+        elif value != other:
+            errors = ["Passwords do not match."]
+        else:
+            errors = []
+    else:
+        errors = ["Unknown field."]
+    return jsonify(errors=errors)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    error = None
+    errors = []
     if request.method == "POST":
         f = request.form
-        full_name = f.get("full_name", "").strip()
         email = f.get("email", "").strip().lower()
-        contact = f.get("contact_no", "").strip()
         password = f.get("password", "")
+        confirm = f.get("confirm", "")
 
-        if len(full_name) < 2:
-            error = "Please enter your full name."
-        elif not EMAIL_RE.match(email):
-            error = "Please enter a valid email address."
-        elif contact and not PHONE_RE.match(contact):
-            error = "Contact no. should only have numbers (7 to 20 digits)."
-        elif len(password) < 8:
-            error = "Password must be at least 8 characters."
-        elif password != f.get("confirm", ""):
-            error = "The two passwords don't match."
+        person, errors = validate_person(f)
+        errors += validate_email(email)
+        errors += validate_password(password)
+        if confirm == "":
+            errors.append("Please confirm your password.")
+        elif password != confirm:
+            errors.append("Passwords do not match.")
+
+        if not REGISTRATION_CODE:
+            errors.append("Registration isn't set up yet. Ask the system owner.")
         elif f.get("code", "").strip() != REGISTRATION_CODE:
-            error = "Wrong registration code. Ask MDCE for the code."
-        else:
+            errors.append("Wrong registration code. Ask MDCE for the code.")
+
+        if not errors:
             db = get_db()
             cur = db.cursor()
-            try:
-                cur.execute("""
-                    INSERT INTO admin (email, password, full_name, position, contact_no, address)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                """, (email, generate_password_hash(password), full_name,
-                      f.get("position", "").strip() or None, contact or None,
-                      f.get("address", "").strip() or None))
-                db.commit()
-                flash("Account created. You can log in now.")
-                return redirect(url_for("login"))
-            except mysql.connector.IntegrityError:
-                error = "That email is already registered."
-            finally:
-                cur.close()
-                db.close()
-    return render_template("register.html", form=request.form, error=error)
+            cur.execute("SELECT email, contact_no FROM admin WHERE email = %s OR contact_no = %s",
+                        (email, person["contact_no"]))
+            for row_email, row_contact in cur.fetchall():
+                if row_email == email:
+                    errors.append("That email is already registered.")
+                if row_contact == person["contact_no"]:
+                    errors.append("That contact number is already registered.")
+            errors = list(dict.fromkeys(errors))
+            if not errors:
+                try:
+                    cur.execute("""
+                        INSERT INTO admin (email, password, full_name, position, contact_no, address)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (email, generate_password_hash(password), person["full_name"],
+                          person["position"], person["contact_no"], person["address"]))
+                    db.commit()
+                    flash("Account created. You can log in now.")
+                    return redirect(url_for("login"))
+                except mysql.connector.IntegrityError:
+                    errors.append("That email is already registered.")
+            cur.close()
+            db.close()
+    return render_template("register.html", form=request.form, vals=form_vals(request.form),
+                           errors=errors, positions=POSITIONS, lgus=LAGUNA_LGUS, regions=REGIONS)
         
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,0 +1,12 @@
+<label>Position</label>
+<select name="position" data-other="pos_other">
+  <option value="">- choose -</option>
+  {% for p in positions %}
+    {% set sel = 'selected' if vals.position == p else '' %}
+    <option value="{{ p }}" {{ sel }}>{{ p }}</option>
+  {% endfor %}
+  {% set other_sel = 'selected' if vals.position == 'Other' else '' %}
+  <option value="Other" {{ other_sel }}>Other (type it)</option>
+</select>
+<input type="text" name="position_other" id="pos_other" maxlength="50"
+       placeholder="Type your position" value="{{ vals.position_other }}" hidden>
