@@ -651,3 +651,5 @@ input.valid {
 .login-card a {
     color: #1c3d6e;
 }
+
+.sub { font-size: 12px; opacity: 0.8; }

@@ -26,23 +26,12 @@
           {% endif %}
           <div class="profile-name">{{ session.admin_name }}</div>
         </div>
-        <nav>
-          <a
-            href="{{ url_for('docs_list') }}"
-            class="nav-btn {% if ep.startswith('doc') %}active{% endif %}"
-            >DockTrack</a
-          >
-          <a
-            href="{{ url_for('jeeps_list') }}"
-            class="nav-btn {% if ep.startswith(('jeep', 'driver')) %}active{% endif %}"
-            >FleetHub</a
-          >
-          <a
-            href="{{ url_for('issues_list') }}"
-            class="nav-btn {% if ep.startswith('issue') %}active{% endif %}"
-            >IssueTrack</a
-          >
-        </nav>
+              <nav>
+        <a href="{{ url_for('docs_list') }}" class="nav-btn {% if ep.startswith('doc') %}active{% endif %}">DockTrack</a>
+        <a href="{{ url_for('jeeps_list') }}" class="nav-btn {% if ep.startswith(('jeep', 'driver')) %}active{% endif %}">FleetHub</a>
+        <a href="{{ url_for('issues_list') }}" class="nav-btn {% if ep.startswith('issue') %}active{% endif %}">IssueTrack</a>
+        <a href="{{ url_for('activity') }}" class="nav-btn {% if ep.startswith('activity') %}active{% endif %}">Activity Log</a>
+      </nav>
         <div class="side-bottom">
           <a href="{{ url_for('dashboard') }}" class="small-btn">Back</a>
           <a href="{{ url_for('logout') }}" class="small-btn">Log out</a>

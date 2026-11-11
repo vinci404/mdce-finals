@@ -6,7 +6,7 @@ from validators import (POSITIONS, LAGUNA_LGUS, REGIONS, FIELD_CHECKS, clean_nam
 import mysql.connector
 import os
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from functools import wraps
 
 app = Flask(__name__)
@@ -15,22 +15,28 @@ try:
 except ImportError:
     SECRET_KEY, REGISTRATION_CODE = "dev-only-key", None
 app.secret_key = SECRET_KEY
+app.permanent_session_lifetime = timedelta(minutes=30)
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax")
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 
 
 def get_db():
-    return mysql.connector.connect(
+    conn = mysql.connector.connect(
         host="localhost",
         user="root",
         password="",
         database="mdce_fleethub"
     )
-    from functools import wraps
+    cur = conn.cursor()
+    cur.execute("SET @admin_id = %s", (session.get("admin_id"),))
+    cur.close()
+    return conn
 
 def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if "admin_id" not in session:
+            flash("Please log in to continue (your session may have timed out).")
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapper
@@ -41,6 +47,7 @@ def password_ok(stored, given):
         return check_password_hash(stored, given)
     return stored == given
 
+@app.route("/", methods=["GET", "POST"])
 @app.route("/", methods=["GET", "POST"])
 def login():
     error = None
@@ -61,8 +68,11 @@ def login():
                 db.commit()
             cur.close()
             db.close()
+            session.clear()
             session["admin_id"] = user["id"]
             session["admin_name"] = user["full_name"]
+            session.permanent = True
+            log_event(user["id"], "logged in", "account", user["id"], user["email"])
             resp = make_response(redirect(url_for("dashboard")))
             if request.form.get("remember"):
                 resp.set_cookie("remember_email", email, max_age=30 * 24 * 3600,
@@ -102,9 +112,21 @@ def dashboard():
     return render_template("dashboard.html", name=session["admin_name"], greeting=greeting,
                            jeeps=jeeps, drivers=drivers, docs=docs, expiring=expiring)
 
+def log_event(admin_id, action, target_type, target_id, details):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("""
+        INSERT INTO activity_log (admin_id, action, target_type, target_id, details)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (admin_id, action, target_type, target_id, details))
+    db.commit()
+    cur.close()
+    db.close()
+
 @app.route("/logout")
 def logout():
     session.clear()
+    flash("You have been logged out.")
     return redirect(url_for("login"))
 
 @app.route("/jeeps")
@@ -404,10 +426,12 @@ def docs_list():
     cur = db.cursor(dictionary=True, buffered=True)
     sql = """
         SELECT d.*, j.jeep_no, j.plate_no, dr.full_name AS driver_name,
+               a.full_name AS uploader,
                DATEDIFF(d.expiry_date, CURDATE()) AS days_left
         FROM documents d
         LEFT JOIN jeeps j ON d.jeep_id = j.id
         LEFT JOIN drivers dr ON d.driver_id = dr.id
+        LEFT JOIN admin a ON d.uploaded_by = a.id
     """
     if doc_type in DOC_TYPES:
         cur.execute(sql + " WHERE d.doc_type = %s ORDER BY d.doc_date DESC, d.id DESC", (doc_type,))
@@ -466,12 +490,14 @@ def docs_add():
 def docs_file(doc_id):
     db = get_db()
     cur = db.cursor(dictionary=True)
-    cur.execute("SELECT file_path FROM documents WHERE id = %s", (doc_id,))
+    cur.execute("SELECT file_path, doc_type FROM documents WHERE id = %s", (doc_id,))
     row = cur.fetchone()
     cur.close()
     db.close()
     if not row:
         abort(404)
+    log_event(session["admin_id"], "viewed", "document", doc_id,
+              row["doc_type"] + " #" + str(doc_id))
     return send_from_directory(DOC_DIR, row["file_path"])
 
 @app.route("/docs/<int:doc_id>/delete", methods=["POST"])
@@ -568,10 +594,13 @@ def issues_list():
     cur = db.cursor(dictionary=True, buffered=True)
     sql = """
         SELECT i.*, j.jeep_no, j.plate_no, dr.full_name AS driver_name,
+               cb.full_name AS reporter, ub.full_name AS editor,
                DATEDIFF(COALESCE(i.date_fixed, CURDATE()), i.date_broken) AS days_stopped
         FROM issues i
         JOIN jeeps j ON i.jeep_id = j.id
         LEFT JOIN drivers dr ON i.driver_id = dr.id
+        LEFT JOIN admin cb ON i.created_by = cb.id
+        LEFT JOIN admin ub ON i.updated_by = ub.id
     """
     order = " ORDER BY (i.status = 'Resolved'), i.date_broken DESC, i.id DESC"
     if status in ISSUE_STATUSES:
@@ -739,16 +768,18 @@ def issues_delete(issue_id):
 
 @app.context_processor
 def inject_topbar():
-    """Makes the bell and photo data available in every page."""
     if "admin_id" not in session:
         return {}
-    db = get_db()
-    cur = db.cursor(dictionary=True, buffered=True)
-    items = get_expiring(cur)
-    cur.execute("SELECT photo_path FROM admin WHERE id = %s", (session["admin_id"],))
-    me = cur.fetchone()
-    cur.close()
-    db.close()
+    try:
+        db = get_db()
+        cur = db.cursor(dictionary=True, buffered=True)
+        items = get_expiring(cur)
+        cur.execute("SELECT photo_path FROM admin WHERE id = %s", (session["admin_id"],))
+        me = cur.fetchone()
+        cur.close()
+        db.close()
+    except mysql.connector.Error:
+        return {"bell_items": [], "bell_count": 0, "my_photo": None}
     return {"bell_items": items[:6], "bell_count": len(items),
             "my_photo": me["photo_path"] if me else None}
 
@@ -938,6 +969,45 @@ def register():
             db.close()
     return render_template("register.html", form=request.form, vals=form_vals(request.form),
                            errors=errors, positions=POSITIONS, lgus=LAGUNA_LGUS, regions=REGIONS)
-        
+
+@app.route("/activity")
+@login_required
+def activity():
+    user = request.args.get("user", type=int)
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    cur.execute("SELECT id, full_name FROM admin ORDER BY full_name")
+    users = cur.fetchall()
+    sql = """
+        SELECT l.*, a.full_name AS who
+        FROM activity_log l LEFT JOIN admin a ON l.admin_id = a.id
+    """
+    if user:
+        cur.execute(sql + " WHERE l.admin_id = %s ORDER BY l.id DESC LIMIT 300", (user,))
+    else:
+        cur.execute(sql + " ORDER BY l.id DESC LIMIT 300")
+    rows = cur.fetchall()
+    cur.close()
+    db.close()
+    return render_template("activity.html", rows=rows, users=users, current_user=user)
+
+# ---------- ERROR PAGES ----------
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("error.html", code=404, message="That page doesn't exist."), 404
+
+@app.errorhandler(413)
+def file_too_large(e):
+    return render_template("error.html", code=413, message="That file is too big. The limit is 25 MB."), 413
+
+@app.errorhandler(mysql.connector.Error)
+def database_error(e):
+    return render_template("error.html", code=500,
+        message="Can't reach the database. Make sure MySQL is running in XAMPP, then try again."), 500
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template("error.html", code=500, message="Something went wrong. Please try again."), 500
+
 if __name__ == "__main__":
     app.run(debug=True)

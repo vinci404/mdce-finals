@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Activity Log{% endblock %}
+{% block content %}
+<h2 class="page-title">Activity Log</h2>
+
+<div class="tabs">
+  <a href="{{ url_for('activity') }}" class="tab {% if not current_user %}active{% endif %}">Everyone</a>
+  {% for u in users %}
+    <a href="{{ url_for('activity', user=u.id) }}"
+       class="tab {% if current_user == u.id %}active{% endif %}">{{ u.full_name }}</a>
+  {% endfor %}
+</div>
+
+<table class="table">
+  <tr><th>When</th><th>Who</th><th>Action</th><th>What</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td>{{ r.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+    <td>{{ r.who or "(removed user)" }}</td>
+    <td>{{ r.action }} {{ r.target_type }}</td>
+    <td>{{ r.details or "-" }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4">Nothing recorded yet.</td></tr>
+  {% endfor %}
+</table>
+<p class="sub">Showing the latest 300 entries.</p>
+{% endblock %}
