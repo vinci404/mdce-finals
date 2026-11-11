@@ -173,16 +173,9 @@ def get_position(f):
 
 def get_address(f):
     muni = f.get("municipality", "")
-    if muni == "Other":
-        muni = " ".join(f.get("municipality_other", "").split())
-        if not re.fullmatch(r"[A-Za-zÀ-ÿ .\-]{2,60}", muni):
-            return None, "Please type your municipality / city (letters only, up to 60 characters)."
-    elif muni not in LAGUNA_LGUS:
+    if muni not in LAGUNA_LGUS:
         return None, "Please choose your municipality / city."
-    region = f.get("region", "")
-    if region not in REGIONS:
-        return None, "Please choose your region."
-    return muni + ", " + region, None
+    return muni + ", Laguna", None
 
 
 def validate_person(f):
@@ -208,14 +201,17 @@ def form_vals(f):
 
 
 def vals_from_admin(a):
-    muni, _, region = (a["address"] or "").rpartition(", ")
-    if region not in REGIONS:
-        muni, region = "", ""
+    addr = a["address"] or ""
+    muni = ""
+    for suffix in (", Laguna", ", Region IV-A (CALABARZON)"):
+        if addr.endswith(suffix):
+            muni = addr[: -len(suffix)]
+            break
     pos = a["position"] or ""
     return {
-        "muni": muni if muni in LAGUNA_LGUS else ("Other" if muni else ""),
-        "muni_other": muni if muni and muni not in LAGUNA_LGUS else "",
-        "region": region,
+        "muni": muni if muni in LAGUNA_LGUS else "",
+        "muni_other": "",
+        "region": "",
         "position": pos if pos in POSITIONS else ("Other" if pos else ""),
         "position_other": pos if pos and pos not in POSITIONS else "",
     }
