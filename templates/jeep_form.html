@@ -1,36 +1,58 @@
-{% extends "base.html" %} {% block title %}{{ title }}{% endblock %} {% block
-content %}
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
 <h2 class="page-title">{{ title }}</h2>
+
 <form method="POST" class="form-card">
-  <label>Jeep no.</label>
+  <label for="jeep_no">Jeep no.</label>
   <input
     type="text"
+    id="jeep_no"
     name="jeep_no"
-    value="{{ jeep.jeep_no if jeep else '' }}"
+    maxlength="10"
+    pattern="[A-Za-z0-9][A-Za-z0-9 -]*"
+    title="Use letters, numbers, spaces, or hyphens."
+    value="{{ jeep.jeep_no }}"
     required
   />
 
-  <label>Plate no.</label>
+  <label for="plate_no">Plate no.</label>
   <input
     type="text"
+    id="plate_no"
     name="plate_no"
-    value="{{ jeep.plate_no if jeep else '' }}"
+    maxlength="20"
+    pattern="[A-Za-z0-9][A-Za-z0-9 -]*"
+    title="Use letters, numbers, spaces, or hyphens."
+    value="{{ jeep.plate_no }}"
     required
   />
 
-  <label>Route</label>
-  <input type="text" name="route" value="{{ jeep.route if jeep else '' }}" />
+  <label for="route">Route</label>
+  <input
+    type="text"
+    id="route"
+    name="route"
+    maxlength="100"
+    value="{{ jeep.route }}"
+  />
 
-  <label>Registration expiry</label>
+  <label for="registration_expiry">Registration expiry</label>
   <input
     type="date"
+    id="registration_expiry"
     name="registration_expiry"
-    value="{{ jeep.registration_expiry if jeep and jeep.registration_expiry else '' }}"
+    value="{{ jeep.registration_expiry }}"
   />
 
-  {% if error %}
-  <p class="error">{{ error }}</p>
+  {% if errors %}
+  <ul class="error-list">
+    {% for message in errors %}
+    <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
   {% endif %}
+
   <button type="submit" class="btn">Save</button>
   <a href="{{ url_for('jeeps_list') }}">Cancel</a>
 </form>

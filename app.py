@@ -1,8 +1,9 @@
 import re
+from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, make_response, jsonify
 from validators import (POSITIONS, LAGUNA_LGUS, REGIONS, FIELD_CHECKS, clean_name, validate_password,
-                        validate_email, validate_person, form_vals, vals_from_admin)
+                        validate_email, validate_person, form_vals, vals_from_admin, validate_jeep)
 import mysql.connector
 import os
 import uuid
@@ -153,51 +154,122 @@ def jeeps_list():
 @app.route("/jeeps/add", methods=["GET", "POST"])
 @login_required
 def jeep_add():
-    error = None
-    if request.method == "POST":
-        f = request.form
-        db = get_db()
-        cur = db.cursor()
-        try:
-            cur.execute(
-                "INSERT INTO jeeps (jeep_no, plate_no, route, registration_expiry) "
-                "VALUES (%s, %s, %s, %s)",
-                (f["jeep_no"], f["plate_no"], f["route"], f["registration_expiry"] or None)
-            )
-            db.commit()
-            return redirect(url_for("jeeps_list"))
-        except mysql.connector.IntegrityError:
-            error = "That jeep no. or plate no. already exists."
-        finally:
-            cur.close()
-            db.close()
-    return render_template("jeep_form.html", jeep=request.form, error=error, title="Add jeep")
+    form = {
+        "jeep_no": (request.form.get("jeep_no") or "").strip(),
+        "plate_no": (request.form.get("plate_no") or "").strip(),
+        "route": (request.form.get("route") or "").strip(),
+        "registration_expiry": (request.form.get("registration_expiry") or "").strip(),
+    }
+    errors = []
 
-@app.route("/jeeps/<int:jeep_id>/edit", methods=["GET", "POST"])
-@login_required
-def jeep_edit(jeep_id):
-    error = None
-    db = get_db()
-    cur = db.cursor(dictionary=True)
-    try:
-        if request.method == "POST":
-            f = request.form
+    if request.method == "POST":
+        errors = validate_jeep(
+            form["jeep_no"],
+            form["plate_no"],
+            form["route"],
+            form["registration_expiry"],
+        )
+
+        if not errors:
+            db = get_db()
+            cur = db.cursor()
             try:
                 cur.execute(
-                    "UPDATE jeeps SET jeep_no=%s, plate_no=%s, route=%s, registration_expiry=%s "
-                    "WHERE id=%s",
-                    (f["jeep_no"], f["plate_no"], f["route"],
-                     f["registration_expiry"] or None, jeep_id)
+                    """
+                    INSERT INTO jeeps
+                        (jeep_no, plate_no, route, registration_expiry)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (
+                        form["jeep_no"],
+                        form["plate_no"],
+                        form["route"],
+                        form["registration_expiry"] or None,
+                    ),
                 )
                 db.commit()
                 return redirect(url_for("jeeps_list"))
             except mysql.connector.IntegrityError:
-                error = "That jeep no. or plate no. already exists."
+                errors.append("That jeep number or plate number already exists.")
+            finally:
+                cur.close()
+                db.close()
+
+    return render_template(
+        "jeep_form.html",
+        jeep=form,
+        errors=errors,
+        title="Add jeep",
+    )
+
+@app.route("/jeeps/<int:jeep_id>/edit", methods=["GET", "POST"])
+@login_required
+def jeep_edit(jeep_id):
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    errors = []
+
+    try:
         cur.execute("SELECT * FROM jeeps WHERE id = %s", (jeep_id,))
         jeep = cur.fetchone()
+
         if not jeep:
             return redirect(url_for("jeeps_list"))
-        return render_template("jeep_form.html", jeep=jeep, error=error, title="Edit jeep")
+
+        form = {
+            "jeep_no": jeep["jeep_no"],
+            "plate_no": jeep["plate_no"],
+            "route": jeep["route"] or "",
+            "registration_expiry": jeep["registration_expiry"] or "",
+        }
+
+        if request.method == "POST":
+            form = {
+                "jeep_no": (request.form.get("jeep_no") or "").strip(),
+                "plate_no": (request.form.get("plate_no") or "").strip(),
+                "route": (request.form.get("route") or "").strip(),
+                "registration_expiry": (
+                    request.form.get("registration_expiry") or ""
+                ).strip(),
+            }
+
+            errors = validate_jeep(
+                form["jeep_no"],
+                form["plate_no"],
+                form["route"],
+                form["registration_expiry"],
+            )
+
+            if not errors:
+                try:
+                    cur.execute(
+                        """
+                        UPDATE jeeps
+                        SET jeep_no = %s, plate_no = %s, route = %s,
+                            registration_expiry = %s
+                        WHERE id = %s
+                        """,
+                        (
+                            form["jeep_no"],
+                            form["plate_no"],
+                            form["route"],
+                            form["registration_expiry"] or None,
+                            jeep_id,
+                        ),
+                    )
+                    db.commit()
+                    return redirect(url_for("jeeps_list"))
+                except mysql.connector.IntegrityError:
+                    errors.append(
+                        "That jeep number or plate number already exists."
+                    )
+
+        return render_template(
+            "jeep_form.html",
+            jeep=form,
+            errors=errors,
+            title="Edit jeep",
+        )
     finally:
         cur.close()
         db.close()

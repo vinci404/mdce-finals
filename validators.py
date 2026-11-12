@@ -1,6 +1,7 @@
 """Validation rules for MDCE FleetHub (ported from the PHP validators.php).
 Every validate_* function returns a LIST of error messages. Empty list = OK."""
 import re
+from datetime import date
 
 NON_EMAIL_DOMAINS = [
     "youtube.com", "youtu.be", "facebook.com", "fb.com", "messenger.com",
@@ -215,3 +216,36 @@ def vals_from_admin(a):
         "position": pos if pos in POSITIONS else ("Other" if pos else ""),
         "position_other": pos if pos and pos not in POSITIONS else "",
     }
+
+def validate_jeep(jeep_no, plate_no, route, registration_expiry):
+    errors = []
+
+    if jeep_no == "":
+        errors.append("Jeep number cannot be empty.")
+    elif len(jeep_no) > 10:
+        errors.append("Jeep number must not exceed 10 characters.")
+    elif not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 -]*", jeep_no):
+        errors.append("Jeep number may contain letters, numbers, spaces and hyphens only.")
+
+    if plate_no == "":
+        errors.append("Plate number cannot be empty.")
+    elif len(plate_no) > 20:
+        errors.append("Plate number must not exceed 20 characters.")
+    elif not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 -]*", plate_no):
+        errors.append("Plate number may contain letters, numbers, spaces and hyphens only.")
+
+    if len(route) > 100:
+        errors.append("Route must not exceed 100 characters.")
+    elif route and not re.fullmatch(r"[\w\s.,()/&-]+", route, flags=re.UNICODE):
+        errors.append("Route contains characters that are not allowed.")
+
+    if registration_expiry:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", registration_expiry):
+            errors.append("Registration expiry must be a valid date.")
+        else:
+            try:
+                date.fromisoformat(registration_expiry)
+            except ValueError:
+                errors.append("Registration expiry must be a real calendar date.")
+
+    return errors
