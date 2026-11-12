@@ -304,3 +304,37 @@ def validate_driver(form):
         errors.append("Assigned jeep selection is invalid.")
 
     return errors
+
+
+def validate_document(form, allowed_types):
+    errors = []
+
+    if form.get("doc_type") not in allowed_types:
+        errors.append("Choose a valid document type.")
+
+    owner = (form.get("owner") or "").strip()
+    kind, separator, owner_id = owner.partition(":")
+    if (
+        not separator
+        or kind not in ("jeep", "driver")
+        or not re.fullmatch(r"[0-9]+", owner_id)
+        or len(owner_id) > 10
+        or int(owner_id) < 1
+    ):
+        errors.append("Choose which jeep or driver this document belongs to.")
+
+    for field, label in (
+        ("doc_date", "Document date"),
+        ("expiry_date", "Expiry date"),
+    ):
+        value = (form.get(field) or "").strip()
+        if value:
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+                errors.append(f"{label} must be a valid date.")
+            else:
+                try:
+                    date.fromisoformat(value)
+                except ValueError:
+                    errors.append(f"{label} must be a real calendar date.")
+
+    return errors

@@ -36,9 +36,15 @@
   <input type="date" name="expiry_date" value="{{ form.get('expiry_date') or '' }}">
 
   <label>File (pdf, png, jpg)</label>
-  <input type="file" name="file" accept=".pdf,image/*" required>
+  <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.webp" required>
 
-  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  {% if errors %}
+  <ul class="error-list">
+    {% for message in errors %}
+    <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   <button type="submit" class="btn">Save</button>
   <a href="{{ url_for('docs_list') }}">Cancel</a>
 </form>

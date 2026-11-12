@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, make_response, jsonify
 from validators import (POSITIONS, LAGUNA_LGUS, REGIONS, FIELD_CHECKS, clean_name, validate_password,
                         validate_email, validate_person, form_vals, vals_from_admin, validate_jeep,
-                        validate_driver)
+                        validate_driver, validate_document)
 import mysql.connector
 import os
 import uuid
@@ -546,37 +546,46 @@ def docs_list():
 def docs_add():
     db = get_db()
     cur = db.cursor(dictionary=True, buffered=True)
-    error = None
+    errors = []
     try:
         if request.method == "POST":
-            f = request.form
-            kind, _, oid = f.get("owner", "").partition(":")
-            if kind not in ("jeep", "driver") or not oid.isdigit():
-                error = "Choose which jeep or driver this document belongs to."
-            elif f.get("doc_type") not in DOC_TYPES:
-                error = "Choose a document type."
-            else:
+            errors = validate_document(request.form, DOC_TYPES)
+            kind, _, oid = (request.form.get("owner") or "").partition(":")
+
+            if not errors:
+                if kind == "jeep":
+                    cur.execute("SELECT id FROM jeeps WHERE id = %s", (int(oid),))
+                else:
+                    cur.execute("SELECT id FROM drivers WHERE id = %s", (int(oid),))
+                if not cur.fetchone():
+                    errors.append("The selected jeep or driver could not be found.")
+
+            if not errors:
                 try:
                     stored = save_document(request.files.get("file"))
                 except ValueError as e:
-                    error = str(e)
+                    errors.append(str(e))
                 else:
-                    cur.execute("""
-                        INSERT INTO documents
-                          (jeep_id, driver_id, doc_type, doc_date, expiry_date, file_path)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (int(oid) if kind == "jeep" else None,
-                          int(oid) if kind == "driver" else None,
-                          f["doc_type"], f.get("doc_date") or None,
-                          f.get("expiry_date") or None, stored))
-                    db.commit()
-                    return redirect(url_for("docs_list"))
+                    try:
+                        cur.execute("""
+                            INSERT INTO documents
+                              (jeep_id, driver_id, doc_type, doc_date, expiry_date, file_path)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                        """, (int(oid) if kind == "jeep" else None,
+                              int(oid) if kind == "driver" else None,
+                              request.form["doc_type"], request.form.get("doc_date") or None,
+                              request.form.get("expiry_date") or None, stored))
+                        db.commit()
+                        return redirect(url_for("docs_list"))
+                    except mysql.connector.IntegrityError:
+                        db.rollback()
+                        errors.append("The selected jeep or driver could not be saved.")
         cur.execute("SELECT id, jeep_no, plate_no FROM jeeps ORDER BY jeep_no")
         jeeps = cur.fetchall()
         cur.execute("SELECT id, full_name FROM drivers ORDER BY full_name")
         drivers = cur.fetchall()
         return render_template("doc_form.html", form=request.form, jeeps=jeeps,
-                               drivers=drivers, doc_types=DOC_TYPES, error=error)
+                               drivers=drivers, doc_types=DOC_TYPES, errors=errors)
     finally:
         cur.close()
         db.close()
