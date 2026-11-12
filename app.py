@@ -47,8 +47,13 @@ def password_ok(stored, given):
         return check_password_hash(stored, given)
     return stored == given
 
-@app.route("/", methods=["GET", "POST"])
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
+def landing():
+    if "admin_id" in session:
+        return redirect(url_for("dashboard"))
+    return render_template("landing.html")
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
     remembered = request.cookies.get("remember_email", "")

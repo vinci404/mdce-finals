@@ -1,0 +1,11 @@
+{% extends "base.html" %} {% block title %}MDCE FleetHub{% endblock %}
+{% block public %}
+<main class="landing-page">
+  <img
+    src="{{ url_for('static', filename='images/mdce-logo.png') }}"
+    class="landing-logo"
+    alt="MDCE Transport Services OPC logo"
+  />
+  <a class="landing-start" href="{{ url_for('login') }}">Get started</a>
+</main>
+{% endblock %}
