@@ -6,6 +6,7 @@ from validators import (POSITIONS, LAGUNA_LGUS, REGIONS, FIELD_CHECKS, clean_nam
                         validate_email, validate_person, form_vals, vals_from_admin, validate_jeep,
                         validate_driver, validate_document, validate_issue)
 import mysql.connector
+from db import Database
 import os
 import uuid
 from datetime import date, datetime, timedelta
@@ -20,19 +21,11 @@ app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = timedelta(minutes=30)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax")
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
+db_manager = Database()
 
 
 def get_db():
-    conn = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="mdce_fleethub"
-    )
-    cur = conn.cursor()
-    cur.execute("SET @admin_id = %s", (session.get("admin_id"),))
-    cur.close()
-    return conn
+    return db_manager.connect(session.get("admin_id"))
 
 def login_required(f):
     @wraps(f)

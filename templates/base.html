@@ -12,6 +12,8 @@
   <body>
     {% if session.admin_id %} {% set ep = request.endpoint or '' %}
     <div class="app">
+      <input class="sidebar-toggle" type="checkbox" id="sidebar-toggle" />
+      <label class="sidebar-toggle-label" for="sidebar-toggle">Menu</label>
       <aside class="sidebar">
         <h1 class="brand">MDCE</h1>
         <div class="profile">
