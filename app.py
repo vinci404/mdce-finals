@@ -87,6 +87,10 @@ def login():
         remembered = email
     return render_template("login.html", error=error, remembered=remembered)
 
+@app.route("/forgot-password")
+def forgot_password():
+    return render_template("forgot_password.html")
+
 @app.route("/dashboard")
 @login_required
 def dashboard():

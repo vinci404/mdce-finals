@@ -64,9 +64,7 @@ def validate_contact(c):
         return ["Contact number must contain exactly 11 digits."]
     if not c.startswith("09"):
         return ["Contact number must start with 09."]
-    if re.fullmatch(r"09([0-9])\1{8}", c):
-        return ["Contact number must not contain repeated identical numbers."]
-    if re.fullmatch(r"(09){5}0", c):
+    if re.search(r"(\d{1,4})\1{2,}", c[2:]):
         return ["Contact number must not contain repeated number patterns."]
     return []
 
