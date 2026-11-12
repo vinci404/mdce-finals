@@ -249,3 +249,58 @@ def validate_jeep(jeep_no, plate_no, route, registration_expiry):
                 errors.append("Registration expiry must be a real calendar date.")
 
     return errors
+
+
+def validate_driver(form):
+    errors = []
+
+    full_name = clean_name(form.get("full_name"))
+    errors.extend(validate_name(full_name))
+
+    emergency_name = clean_name(form.get("emergency_name"))
+    if emergency_name:
+        errors.extend(validate_name(emergency_name))
+
+    for field, label in (
+        ("contact_no", "Driver contact number"),
+        ("emergency_contact_no", "Emergency contact number"),
+    ):
+        value = (form.get(field) or "").strip()
+        if value:
+            for message in validate_contact(value):
+                errors.append(f"{label}: {message}")
+
+    license_no = (form.get("license_no") or "").strip()
+    if license_no:
+        if len(license_no) > 30:
+            errors.append("License number must not exceed 30 characters.")
+        elif not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 -]*", license_no):
+            errors.append(
+                "License number may contain letters, numbers, spaces and hyphens only."
+            )
+
+    address = (form.get("address") or "").strip()
+    if len(address) > 255:
+        errors.append("Address must not exceed 255 characters.")
+
+    for field, label in (
+        ("birth_date", "Birth date"),
+        ("license_expiry", "License expiry"),
+        ("date_joined", "Date joined"),
+        ("assigned_since", "Driving this jeep since"),
+    ):
+        value = (form.get(field) or "").strip()
+        if value:
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+                errors.append(f"{label} must be a valid date.")
+            else:
+                try:
+                    date.fromisoformat(value)
+                except ValueError:
+                    errors.append(f"{label} must be a real calendar date.")
+
+    jeep_id = (form.get("jeep_id") or "").strip()
+    if jeep_id and not re.fullmatch(r"[0-9]+", jeep_id):
+        errors.append("Assigned jeep selection is invalid.")
+
+    return errors

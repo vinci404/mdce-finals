@@ -3,7 +3,8 @@ from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, make_response, jsonify
 from validators import (POSITIONS, LAGUNA_LGUS, REGIONS, FIELD_CHECKS, clean_name, validate_password,
-                        validate_email, validate_person, form_vals, vals_from_admin, validate_jeep)
+                        validate_email, validate_person, form_vals, vals_from_admin, validate_jeep,
+                        validate_driver)
 import mysql.connector
 import os
 import uuid
@@ -316,11 +317,25 @@ def free_jeeps(cur, current=None):
     return cur.fetchall()
 
 def clean_driver_form(form):
-    keys = ["full_name", "birth_date", "address", "contact_no", "license_no",
-            "license_expiry", "date_joined", "emergency_name", "emergency_contact_no"]
-    data = {k: (form.get(k) or None) for k in keys}
-    data["jeep_id"] = int(form["jeep_id"]) if form.get("jeep_id") else None
-    data["assigned_since"] = form.get("assigned_since") or None
+    keys = [
+        "full_name",
+        "birth_date",
+        "address",
+        "contact_no",
+        "license_no",
+        "license_expiry",
+        "date_joined",
+        "emergency_name",
+        "emergency_contact_no",
+    ]
+    data = {key: (form.get(key) or "").strip() or None for key in keys}
+    data["full_name"] = clean_name(data["full_name"])
+    if data["emergency_name"]:
+        data["emergency_name"] = clean_name(data["emergency_name"])
+
+    jeep_value = (form.get("jeep_id") or "").strip()
+    data["jeep_id"] = int(jeep_value) if jeep_value else None
+    data["assigned_since"] = (form.get("assigned_since") or "").strip() or None
     return data
 
 def driver_values(data, photo):
@@ -351,32 +366,34 @@ def drivers_list():
 def driver_add():
     db = get_db()
     cur = db.cursor(dictionary=True, buffered=True)
-    error = None
+    errors = []
     try:
         if request.method == "POST":
-            data = clean_driver_form(request.form)
-            try:
-                photo = save_photo(request.files.get("photo"))
-                cur.execute("""
-                    INSERT INTO drivers (full_name, photo_path, birth_date, address,
-                        contact_no, license_no, license_expiry, jeep_id, date_joined,
-                        emergency_name, emergency_contact_no)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                """, driver_values(data, photo))
-                if data["jeep_id"]:
-                    cur.execute(
-                        "UPDATE jeeps SET driver_assigned_since = COALESCE(%s, CURDATE()) WHERE id = %s",
-                        (data["assigned_since"], data["jeep_id"]))
-                db.commit()
-                return redirect(url_for("drivers_list"))
-            except ValueError as e:
-                error = str(e)
-            except mysql.connector.IntegrityError:
-                db.rollback()
-                error = "That jeep is already assigned to another driver."
+            errors = validate_driver(request.form)
+            if not errors:
+                data = clean_driver_form(request.form)
+                try:
+                    photo = save_photo(request.files.get("photo"))
+                    cur.execute("""
+                        INSERT INTO drivers (full_name, photo_path, birth_date, address,
+                            contact_no, license_no, license_expiry, jeep_id, date_joined,
+                            emergency_name, emergency_contact_no)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    """, driver_values(data, photo))
+                    if data["jeep_id"]:
+                        cur.execute(
+                            "UPDATE jeeps SET driver_assigned_since = COALESCE(%s, CURDATE()) WHERE id = %s",
+                            (data["assigned_since"], data["jeep_id"]))
+                    db.commit()
+                    return redirect(url_for("drivers_list"))
+                except ValueError as e:
+                    errors.append(str(e))
+                except mysql.connector.IntegrityError:
+                    db.rollback()
+                    errors.append("That jeep is already assigned to another driver.")
         jeeps = free_jeeps(cur)
         return render_template("driver_form.html", driver=request.form, jeeps=jeeps,
-                               error=error, title="Add driver")
+                               errors=errors, title="Add driver")
     finally:
         cur.close()
         db.close()
@@ -386,7 +403,7 @@ def driver_add():
 def driver_edit(driver_id):
     db = get_db()
     cur = db.cursor(dictionary=True, buffered=True)
-    error = None
+    errors = []
     try:
         cur.execute("""
             SELECT d.*, j.driver_assigned_since AS assigned_since
@@ -399,35 +416,37 @@ def driver_edit(driver_id):
         current_jeep = driver["jeep_id"]
 
         if request.method == "POST":
-            data = clean_driver_form(request.form)
-            try:
-                photo = save_photo(request.files.get("photo")) or driver["photo_path"]
-                cur.execute("""
-                    UPDATE drivers SET full_name=%s, photo_path=%s, birth_date=%s,
-                        address=%s, contact_no=%s, license_no=%s, license_expiry=%s,
-                        jeep_id=%s, date_joined=%s, emergency_name=%s,
-                        emergency_contact_no=%s
-                    WHERE id=%s
-                """, driver_values(data, photo) + (driver_id,))
-                if current_jeep and current_jeep != data["jeep_id"]:
-                    cur.execute("UPDATE jeeps SET driver_assigned_since = NULL WHERE id = %s",
-                                (current_jeep,))
-                if data["jeep_id"]:
-                    cur.execute(
-                        "UPDATE jeeps SET driver_assigned_since = COALESCE(%s, CURDATE()) WHERE id = %s",
-                        (data["assigned_since"], data["jeep_id"]))
-                db.commit()
-                return redirect(url_for("drivers_list"))
-            except ValueError as e:
-                error = str(e)
-            except mysql.connector.IntegrityError:
-                db.rollback()
-                error = "That jeep is already assigned to another driver."
+            errors = validate_driver(request.form)
+            if not errors:
+                data = clean_driver_form(request.form)
+                try:
+                    photo = save_photo(request.files.get("photo")) or driver["photo_path"]
+                    cur.execute("""
+                        UPDATE drivers SET full_name=%s, photo_path=%s, birth_date=%s,
+                            address=%s, contact_no=%s, license_no=%s, license_expiry=%s,
+                            jeep_id=%s, date_joined=%s, emergency_name=%s,
+                            emergency_contact_no=%s
+                        WHERE id=%s
+                    """, driver_values(data, photo) + (driver_id,))
+                    if current_jeep and current_jeep != data["jeep_id"]:
+                        cur.execute("UPDATE jeeps SET driver_assigned_since = NULL WHERE id = %s",
+                                    (current_jeep,))
+                    if data["jeep_id"]:
+                        cur.execute(
+                            "UPDATE jeeps SET driver_assigned_since = COALESCE(%s, CURDATE()) WHERE id = %s",
+                            (data["assigned_since"], data["jeep_id"]))
+                    db.commit()
+                    return redirect(url_for("drivers_list"))
+                except ValueError as e:
+                    errors.append(str(e))
+                except mysql.connector.IntegrityError:
+                    db.rollback()
+                    errors.append("That jeep is already assigned to another driver.")
             driver = {**driver, **request.form.to_dict()}
 
         jeeps = free_jeeps(cur, current_jeep)
         return render_template("driver_form.html", driver=driver, jeeps=jeeps,
-                               error=error, title="Edit driver")
+                               errors=errors, title="Edit driver")
     finally:
         cur.close()
         db.close()

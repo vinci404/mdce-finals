@@ -8,7 +8,7 @@
   <div class="form-grid">
     <div>
       <label>Full name</label>
-      <input type="text" name="full_name" value="{{ driver.get('full_name') or '' }}" required>
+      <input type="text" name="full_name" maxlength="50" value="{{ driver.get('full_name') or '' }}" required>
     </div>
     <div>
       <label>Birth date</label>
@@ -16,15 +16,15 @@
     </div>
     <div>
       <label>Contact no.</label>
-      <input type="text" name="contact_no" value="{{ driver.get('contact_no') or '' }}">
+      <input type="tel" name="contact_no" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" value="{{ driver.get('contact_no') or '' }}">
     </div>
     <div>
       <label>Address</label>
-      <input type="text" name="address" value="{{ driver.get('address') or '' }}">
+      <input type="text" name="address" maxlength="255" value="{{ driver.get('address') or '' }}">
     </div>
     <div>
       <label>License no.</label>
-      <input type="text" name="license_no" value="{{ driver.get('license_no') or '' }}">
+      <input type="text" name="license_no" maxlength="30" value="{{ driver.get('license_no') or '' }}">
     </div>
     <div>
       <label>License expiry</label>
@@ -51,11 +51,11 @@
     </div>
     <div>
       <label>Emergency contact name</label>
-      <input type="text" name="emergency_name" value="{{ driver.get('emergency_name') or '' }}">
+      <input type="text" name="emergency_name" maxlength="50" value="{{ driver.get('emergency_name') or '' }}">
     </div>
     <div>
       <label>Emergency contact no.</label>
-      <input type="text" name="emergency_contact_no" value="{{ driver.get('emergency_contact_no') or '' }}">
+      <input type="tel" name="emergency_contact_no" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" value="{{ driver.get('emergency_contact_no') or '' }}">
     </div>
     <div>
       <label>Photo</label>
@@ -66,7 +66,13 @@
     </div>
   </div>
 
-  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  {% if errors %}
+  <ul class="error-list">
+    {% for message in errors %}
+    <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   <button type="submit" class="btn">Save</button>
   <a href="{{ url_for('drivers_list') }}">Cancel</a>
 </form>

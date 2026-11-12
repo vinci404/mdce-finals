@@ -711,3 +711,8 @@ input.valid {
         min-height: 44px;
     }
 }
+
+.badge {
+    display: inline-block;
+    white-space: nowrap;
+}
