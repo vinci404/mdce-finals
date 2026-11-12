@@ -338,3 +338,74 @@ def validate_document(form, allowed_types):
                     errors.append(f"{label} must be a real calendar date.")
 
     return errors
+
+
+def validate_issue(form, issue_types, statuses, paid_by_options):
+    errors = []
+
+    jeep_id = (form.get("jeep_id") or "").strip()
+    if not re.fullmatch(r"[0-9]+", jeep_id) or len(jeep_id) > 10 or int(jeep_id) < 1:
+        errors.append("Choose a valid jeep.")
+
+    if form.get("issue_type") not in issue_types:
+        errors.append("Choose a valid issue type.")
+
+    if form.get("status") not in statuses:
+        errors.append("Choose a valid issue status.")
+
+    paid_by = (form.get("paid_by") or "").strip()
+    if paid_by and paid_by not in paid_by_options:
+        errors.append("Choose a valid sponsor.")
+
+    description = (form.get("issue") or "").strip()
+    if not description:
+        errors.append("Describe the issue.")
+
+    parsed_dates = {}
+    for field, label, required in (
+        ("date_broken", "Date broken", True),
+        ("date_fixed", "Date fixed", False),
+    ):
+        value = (form.get(field) or "").strip()
+        if not value:
+            if required:
+                errors.append("Enter the date broken.")
+            continue
+
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            errors.append(f"{label} must be a valid date.")
+            continue
+
+        try:
+            parsed_dates[field] = date.fromisoformat(value)
+        except ValueError:
+            errors.append(f"{label} must be a real calendar date.")
+
+    if (
+        parsed_dates.get("date_broken")
+        and parsed_dates.get("date_fixed")
+        and parsed_dates["date_fixed"] < parsed_dates["date_broken"]
+    ):
+        errors.append("Date fixed can't be before date broken.")
+
+    cost = (form.get("cost") or "").strip()
+    if cost and not re.fullmatch(r"\d{1,8}(?:\.\d{1,2})?", cost):
+        errors.append("Cost must be a non-negative number with up to 2 decimal places.")
+
+    for field, label, max_length in (
+        ("shop_place", "Shop / place", 100),
+        ("technician", "Technician / personnel", 100),
+        ("repair_details", "Repair details", 255),
+    ):
+        value = (form.get(field) or "").strip()
+        if len(value) > max_length:
+            errors.append(f"{label} must not exceed {max_length} characters.")
+
+    substitute_id = (form.get("substitute_jeep_id") or "").strip()
+    if substitute_id:
+        if not re.fullmatch(r"[0-9]+", substitute_id) or len(substitute_id) > 10 or int(substitute_id) < 1:
+            errors.append("Choose a valid substitute jeep.")
+        elif jeep_id.isdigit() and int(substitute_id) == int(jeep_id):
+            errors.append("The substitute jeep can't be the same jeep.")
+
+    return errors

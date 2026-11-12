@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, make_response, jsonify
 from validators import (POSITIONS, LAGUNA_LGUS, REGIONS, FIELD_CHECKS, clean_name, validate_password,
                         validate_email, validate_person, form_vals, vals_from_admin, validate_jeep,
-                        validate_driver, validate_document)
+                        validate_driver, validate_document, validate_issue)
 import mysql.connector
 import os
 import uuid
@@ -653,38 +653,19 @@ def clean_issue_form(f):
         "issue_type": f.get("issue_type") if f.get("issue_type") in ISSUE_TYPES else "Other",
         "issue": (f.get("issue") or "").strip(),
         "status": f.get("status") if f.get("status") in ISSUE_STATUSES else "Open",
-        "date_broken": f.get("date_broken") or None,
-        "date_fixed": f.get("date_fixed") or None,
-        "cost": f.get("cost") or None,
-        "shop_place": f.get("shop_place") or None,
-        "technician": f.get("technician") or None,
+        "date_broken": (f.get("date_broken") or "").strip() or None,
+        "date_fixed": (f.get("date_fixed") or "").strip() or None,
+        "cost": (f.get("cost") or "").strip() or None,
+        "shop_place": (f.get("shop_place") or "").strip() or None,
+        "technician": (f.get("technician") or "").strip() or None,
         "paid_by": f.get("paid_by") if f.get("paid_by") in PAID_BY else None,
-        "repair_details": f.get("repair_details") or None,
+        "repair_details": (f.get("repair_details") or "").strip() or None,
         "substitute_jeep_id": int(f["substitute_jeep_id"]) if f.get("substitute_jeep_id") else None,
     }
     # A fixed date means the repair is done, so mark it Resolved automatically
     if data["date_fixed"]:
         data["status"] = "Resolved"
     return data
-
-def validate_issue(d):
-    if not d["jeep_id"]:
-        return "Choose a jeep."
-    if not d["issue"]:
-        return "Describe the issue."
-    if not d["date_broken"]:
-        return "Enter the date broken."
-    if d["date_fixed"] and d["date_fixed"] < d["date_broken"]:
-        return "Date fixed can't be before date broken."
-    if d["cost"]:
-        try:
-            if float(d["cost"]) < 0:
-                return "Cost can't be negative."
-        except ValueError:
-            return "Cost must be a number."
-    if d["substitute_jeep_id"] and d["substitute_jeep_id"] == d["jeep_id"]:
-        return "The substitute jeep can't be the same jeep."
-    return None
 
 def issue_fields(d):
     return (d["issue_type"], d["issue"], d["status"], d["date_broken"], d["date_fixed"],
@@ -724,12 +705,23 @@ def issues_list():
 def issues_add():
     db = get_db()
     cur = db.cursor(dictionary=True, buffered=True)
-    error = None
+    errors = []
     try:
         if request.method == "POST":
-            data = clean_issue_form(request.form)
-            error = validate_issue(data)
-            if not error:
+            errors = validate_issue(request.form, ISSUE_TYPES, ISSUE_STATUSES, PAID_BY)
+            if not errors:
+                data = clean_issue_form(request.form)
+                cur.execute("SELECT id FROM jeeps WHERE id = %s", (data["jeep_id"],))
+                if not cur.fetchone():
+                    errors.append("The selected jeep could not be found.")
+
+                if data["substitute_jeep_id"]:
+                    cur.execute("SELECT id FROM jeeps WHERE id = %s",
+                                (data["substitute_jeep_id"],))
+                    if not cur.fetchone():
+                        errors.append("The selected substitute jeep could not be found.")
+
+            if not errors:
                 try:
                     cur.execute("SELECT id FROM drivers WHERE jeep_id = %s", (data["jeep_id"],))
                     drv = cur.fetchone()
@@ -744,11 +736,14 @@ def issues_add():
                     return redirect(url_for("issues_list"))
                 except ValueError as e:
                     db.rollback()
-                    error = str(e)
+                    errors.append(str(e))
+                except mysql.connector.IntegrityError:
+                    db.rollback()
+                    errors.append("The issue could not be saved because a selected jeep is invalid.")
         cur.execute("SELECT id, jeep_no, plate_no FROM jeeps ORDER BY jeep_no")
         jeeps = cur.fetchall()
         return render_template("issue_form.html", issue=request.form, jeeps=jeeps,
-                               error=error, title="Add issue", editing=False,
+                               errors=errors, title="Add issue", editing=False,
                                today=date.today().isoformat(), issue_types=ISSUE_TYPES,
                                statuses=ISSUE_STATUSES, paid_by=PAID_BY,
                                photos=[], history=[])
@@ -761,7 +756,7 @@ def issues_add():
 def issues_edit(issue_id):
     db = get_db()
     cur = db.cursor(dictionary=True, buffered=True)
-    error = None
+    errors = []
     try:
         cur.execute("""
             SELECT i.*, j.jeep_no, j.plate_no, dr.full_name AS driver_name,
@@ -776,24 +771,36 @@ def issues_edit(issue_id):
             return redirect(url_for("issues_list"))
 
         if request.method == "POST":
-            data = clean_issue_form(request.form)
-            data["jeep_id"] = issue["jeep_id"]
-            error = validate_issue(data)
-            if not error:
-                try:
-                    cur.execute("""
-                        UPDATE issues SET issue_type=%s, issue=%s, status=%s, date_broken=%s,
-                            date_fixed=%s, cost=%s, shop_place=%s, technician=%s, paid_by=%s,
-                            repair_details=%s, substitute_jeep_id=%s
-                        WHERE id=%s
-                    """, issue_fields(data) + (issue_id,))
-                    save_issue_photos(cur, issue_id, request.files.getlist("photos"))
-                    db.commit()
-                    flash("Issue saved.")
-                    return redirect(url_for("issues_list"))
-                except ValueError as e:
-                    db.rollback()
-                    error = str(e)
+            form = request.form.to_dict()
+            form["jeep_id"] = str(issue["jeep_id"])
+            errors = validate_issue(form, ISSUE_TYPES, ISSUE_STATUSES, PAID_BY)
+            if not errors:
+                data = clean_issue_form(form)
+                data["jeep_id"] = issue["jeep_id"]
+                if data["substitute_jeep_id"]:
+                    cur.execute("SELECT id FROM jeeps WHERE id = %s",
+                                (data["substitute_jeep_id"],))
+                    if not cur.fetchone():
+                        errors.append("The selected substitute jeep could not be found.")
+
+                if not errors:
+                    try:
+                        cur.execute("""
+                            UPDATE issues SET issue_type=%s, issue=%s, status=%s, date_broken=%s,
+                                date_fixed=%s, cost=%s, shop_place=%s, technician=%s, paid_by=%s,
+                                repair_details=%s, substitute_jeep_id=%s
+                            WHERE id=%s
+                        """, issue_fields(data) + (issue_id,))
+                        save_issue_photos(cur, issue_id, request.files.getlist("photos"))
+                        db.commit()
+                        flash("Issue saved.")
+                        return redirect(url_for("issues_list"))
+                    except ValueError as e:
+                        db.rollback()
+                        errors.append(str(e))
+                    except mysql.connector.IntegrityError:
+                        db.rollback()
+                        errors.append("The issue could not be saved because a selected jeep is invalid.")
             issue = {**issue, **request.form.to_dict()}
 
         cur.execute("SELECT id, jeep_no, plate_no FROM jeeps ORDER BY jeep_no")
@@ -808,7 +815,7 @@ def issues_edit(issue_id):
             ORDER BY i.date_broken DESC
         """, (issue["jeep_id"], issue_id))
         history = cur.fetchall()
-        return render_template("issue_form.html", issue=issue, jeeps=jeeps, error=error,
+        return render_template("issue_form.html", issue=issue, jeeps=jeeps, errors=errors,
                                title="Issue report", editing=True,
                                today=date.today().isoformat(), issue_types=ISSUE_TYPES,
                                statuses=ISSUE_STATUSES, paid_by=PAID_BY,

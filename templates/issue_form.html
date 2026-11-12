@@ -60,17 +60,17 @@
 
     <div>
       <label>Shop / place</label>
-      <input type="text" name="shop_place" value="{{ issue.get('shop_place') or '' }}">
+      <input type="text" name="shop_place" maxlength="100" value="{{ issue.get('shop_place') or '' }}">
     </div>
 
     <div>
       <label>Technician / personnel</label>
-      <input type="text" name="technician" value="{{ issue.get('technician') or '' }}">
+      <input type="text" name="technician" maxlength="100" value="{{ issue.get('technician') or '' }}">
     </div>
 
     <div>
       <label>Cost (₱)</label>
-      <input type="number" step="0.01" min="0" name="cost" value="{{ issue.get('cost') or '' }}">
+      <input type="number" step="0.01" min="0" max="99999999.99" name="cost" value="{{ issue.get('cost') or '' }}">
     </div>
 
     <div>
@@ -97,7 +97,7 @@
 
     <div>
       <label>What was bought / fixed</label>
-      <input type="text" name="repair_details" value="{{ issue.get('repair_details') or '' }}">
+      <input type="text" name="repair_details" maxlength="255" value="{{ issue.get('repair_details') or '' }}">
     </div>
 
     <div class="full">
@@ -107,7 +107,7 @@
 
     <div class="full">
       <label>Add photos (you can choose several)</label>
-      <input type="file" name="photos" accept="image/*" multiple>
+      <input type="file" name="photos" accept=".png,.jpg,.jpeg,.webp" multiple>
     </div>
   </div>
 
@@ -115,7 +115,13 @@
     <p>Time span: <strong>{{ issue.days_stopped }} day(s)</strong>{% if not issue.date_fixed %} so far (not fixed yet){% endif %}</p>
   {% endif %}
 
-  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  {% if errors %}
+  <ul class="error-list">
+    {% for message in errors %}
+    <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   <button type="submit" class="btn">Save</button>
   <a href="{{ url_for('issues_list') }}">Cancel</a>
 </form>
