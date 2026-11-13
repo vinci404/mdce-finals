@@ -9,6 +9,20 @@ body {
     color: #1c3d6e;
     background: linear-gradient(180deg, #3b8fb8 0%, #bcd6e4 55%, #d9d4b8 100%);
     background-attachment: fixed;
+    isolation: isolate;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: url("../images/mdce-logo.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: min(70vw, 520px);
+    opacity: 0.08;
+    pointer-events: none;
 }
 
 /* login */
