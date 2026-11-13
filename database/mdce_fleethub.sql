@@ -11,6 +11,19 @@ CREATE TABLE admin (
   contact_no VARCHAR(20)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  admin_id INT NOT NULL,
+  token_hash CHAR(64) NOT NULL UNIQUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  INDEX idx_password_reset_admin_id (admin_id),
+  INDEX idx_password_reset_expires_at (expires_at),
+  CONSTRAINT fk_password_reset_admin
+    FOREIGN KEY (admin_id) REFERENCES admin(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE jeeps (
   id INT AUTO_INCREMENT PRIMARY KEY,
   jeep_no VARCHAR(10) NOT NULL UNIQUE,
