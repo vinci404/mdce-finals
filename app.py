@@ -1,4 +1,7 @@
 import re
+import json
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, make_response, jsonify
@@ -17,6 +20,12 @@ try:
     from secrets_config import SECRET_KEY, REGISTRATION_CODE
 except ImportError:
     SECRET_KEY, REGISTRATION_CODE = "dev-only-key", None
+
+try:
+    from secrets_config import APPS_SCRIPT_EMAIL_URL, APPS_SCRIPT_EMAIL_SECRET
+except ImportError:
+    APPS_SCRIPT_EMAIL_URL = ""
+    APPS_SCRIPT_EMAIL_SECRET = ""
 app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = timedelta(minutes=30)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax")
@@ -26,6 +35,37 @@ db_manager = Database()
 
 def get_db():
     return db_manager.connect(session.get("admin_id"))
+
+def send_apps_script_email(to, subject, body, html_body=None):
+    if not APPS_SCRIPT_EMAIL_URL or not APPS_SCRIPT_EMAIL_SECRET:
+        return False, "Apps Script email settings are missing."
+
+    payload = {
+        "secret": APPS_SCRIPT_EMAIL_SECRET,
+        "to": to,
+        "subject": subject,
+        "body": body,
+        "htmlBody": html_body or "",
+    }
+
+    request_data = Request(
+        APPS_SCRIPT_EMAIL_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urlopen(request_data, timeout=25) as response:
+            result = json.loads(response.read().decode("utf-8"))
+
+        if result.get("ok") is True:
+            return True, "Email sent."
+
+        return False, result.get("message", "Apps Script rejected the request.")
+
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        return False, "Could not reach the Apps Script email service."
 
 def login_required(f):
     @wraps(f)
