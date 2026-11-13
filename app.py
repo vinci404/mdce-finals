@@ -1,4 +1,6 @@
 import re
+import hashlib
+import secrets
 import json
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -20,6 +22,11 @@ try:
     from secrets_config import SECRET_KEY, REGISTRATION_CODE
 except ImportError:
     SECRET_KEY, REGISTRATION_CODE = "dev-only-key", None
+
+try:
+    from secrets_config import APP_BASE_URL
+except ImportError:
+    APP_BASE_URL = ""
 
 try:
     from secrets_config import APPS_SCRIPT_EMAIL_URL, APPS_SCRIPT_EMAIL_SECRET
@@ -127,9 +134,163 @@ def login():
         remembered = email
     return render_template("login.html", error=error, remembered=remembered)
 
-@app.route("/forgot-password")
+@app.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
-    return render_template("forgot_password.html")
+    message = None
+
+    if request.method == "POST":
+        message = "If an account with that email exists, a reset link will be sent."
+        email = request.form.get("email", "").strip().lower()
+
+        if email and APP_BASE_URL:
+            db = get_db()
+            cur = db.cursor(dictionary=True, buffered=True)
+
+            try:
+                cur.execute("SELECT id FROM admin WHERE email = %s", (email,))
+                admin = cur.fetchone()
+
+                if admin:
+                    cur.execute("""
+                        SELECT id
+                        FROM password_reset_tokens
+                        WHERE admin_id = %s
+                          AND created_at > NOW() - INTERVAL 5 MINUTE
+                        LIMIT 1
+                    """, (admin["id"],))
+                    recent_request = cur.fetchone()
+
+                    if not recent_request:
+                        cur.execute("""
+                            UPDATE password_reset_tokens
+                            SET used_at = NOW()
+                            WHERE admin_id = %s AND used_at IS NULL
+                        """, (admin["id"],))
+
+                        token = secrets.token_urlsafe(32)
+                        token_hash = hashlib.sha256(
+                            token.encode("utf-8")
+                        ).hexdigest()
+                        expires_at = datetime.now() + timedelta(minutes=30)
+
+                        cur.execute("""
+                            INSERT INTO password_reset_tokens
+                                (admin_id, token_hash, expires_at)
+                            VALUES (%s, %s, %s)
+                        """, (admin["id"], token_hash, expires_at))
+                        db.commit()
+
+                        reset_url = (
+                            APP_BASE_URL.rstrip("/")
+                            + url_for("reset_password", token=token)
+                        )
+
+                        body = (
+                            "A password reset was requested for your "
+                            "MDCE FleetHub account.\n\n"
+                            f"Open this link within 30 minutes:\n{reset_url}\n\n"
+                            "If you did not request this, ignore this email."
+                        )
+                        html_body = (
+                            "<p>A password reset was requested for your "
+                            "MDCE FleetHub account.</p>"
+                            f'<p><a href="{reset_url}">Reset your password</a>'
+                            " (link expires in 30 minutes).</p>"
+                            "<p>If you did not request this, ignore this email.</p>"
+                        )
+
+                        sent, _ = send_apps_script_email(
+                            email,
+                            "MDCE FleetHub password reset",
+                            body,
+                            html_body,
+                        )
+
+                        if not sent:
+                            cur.execute("""
+                                UPDATE password_reset_tokens
+                                SET used_at = NOW()
+                                WHERE token_hash = %s
+                            """, (token_hash,))
+                            db.commit()
+            finally:
+                cur.close()
+                db.close()
+
+    return render_template("forgot_password.html", message=message)
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    errors = []
+
+    try:
+        cur.execute("""
+            SELECT id, admin_id
+            FROM password_reset_tokens
+            WHERE token_hash = %s
+              AND used_at IS NULL
+              AND expires_at > NOW()
+        """, (token_hash,))
+        reset = cur.fetchone()
+
+        if not reset:
+            return render_template(
+                "reset_password.html",
+                token_valid=False,
+                errors=[]
+            )
+
+        if request.method == "POST":
+            password = request.form.get("password", "")
+            confirm_password = request.form.get("confirm_password", "")
+
+            errors = validate_password(password)
+
+            if password != confirm_password:
+                errors.append("Passwords do not match.")
+
+            if not errors:
+                cur.execute("""
+                    UPDATE password_reset_tokens
+                    SET used_at = NOW()
+                    WHERE id = %s
+                      AND used_at IS NULL
+                      AND expires_at > NOW()
+                """, (reset["id"],))
+
+                if cur.rowcount != 1:
+                    db.rollback()
+                    return render_template(
+                        "reset_password.html",
+                        token_valid=False,
+                        errors=[]
+                    )
+
+                cur.execute("""
+                    UPDATE admin
+                    SET password = %s
+                    WHERE id = %s
+                """, (
+                    generate_password_hash(password),
+                    reset["admin_id"]
+                ))
+                db.commit()
+
+                session.clear()
+                flash("Password reset. Please log in with your new password.")
+                return redirect(url_for("login"))
+
+        return render_template(
+            "reset_password.html",
+            token_valid=True,
+            errors=errors
+        )
+    finally:
+        cur.close()
+        db.close()
 
 @app.route("/dashboard")
 @login_required
