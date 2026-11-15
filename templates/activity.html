@@ -11,18 +11,24 @@
   {% endfor %}
 </div>
 
-<table class="table">
-  <tr><th>When</th><th>Who</th><th>Action</th><th>What</th></tr>
-  {% for r in rows %}
-  <tr>
-    <td>{{ r.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
-    <td>{{ r.who or "(removed user)" }}</td>
-    <td>{{ r.action }} {{ r.target_type }}</td>
-    <td>{{ r.details or "-" }}</td>
-  </tr>
-  {% else %}
-  <tr><td colspan="4">Nothing recorded yet.</td></tr>
-  {% endfor %}
-</table>
+<div class="activity-log-scroll" role="region" aria-label="Activity records" tabindex="0">
+  <table class="table activity-log-table">
+    <thead>
+      <tr><th>When</th><th>Who</th><th>Action</th><th>What</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+        <td>{{ r.who or "(removed user)" }}</td>
+        <td>{{ r.action }} {{ r.target_type }}</td>
+        <td>{{ r.details or "-" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">Nothing recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 <p class="sub">Showing the latest 300 entries.</p>
 {% endblock %}

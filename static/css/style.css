@@ -244,6 +244,26 @@ input {
     background: rgba(255, 255, 255, 0.5);
 }
 
+.activity-log-scroll {
+    max-height: 68vh;
+    overflow: auto;
+    border: 1px solid #7aa7bf;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.activity-log-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--mdce-light-blue);
+}
+
+.activity-log-scroll:focus-visible {
+    outline: 3px solid var(--mdce-gold);
+    outline-offset: 2px;
+}
+
 .table th,
 .table td {
     padding: 10px;
