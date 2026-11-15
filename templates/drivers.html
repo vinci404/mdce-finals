@@ -36,6 +36,7 @@ block content %} {% include "_fleet_tabs.html" %}
     <td>{{ d.contact_no or "-" }}</td>
     <td>{{ d.address or "-" }}</td>
     <td>
+      <a href="{{ url_for('driver_profile', driver_id=d.id) }}" class="btn-sm">View profile</a>
       <a href="{{ url_for('driver_edit', driver_id=d.id) }}" class="btn-sm"
         >Edit</a
       >

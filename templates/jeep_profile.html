@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Jeep {{ jeep.jeep_no }} - Profile{% endblock %}
+{% block content %}
+{% include "_fleet_tabs.html" %}
+
+<div class="page-head">
+  <h2 class="page-title">Jeep profile</h2>
+  <div class="jeep-profile-actions">
+    <a href="{{ url_for('jeeps_list') }}" class="btn-sm">Back to jeeps</a>
+    <a href="{{ url_for('jeep_edit', jeep_id=jeep.id) }}" class="btn">Edit jeep</a>
+  </div>
+</div>
+
+<section class="jeep-profile-card">
+  <div class="jeep-profile-heading">
+    <h2>Jeep {{ jeep.jeep_no }}</h2>
+    <p>Plate no. {{ jeep.plate_no }}</p>
+  </div>
+  <div class="jeep-details-grid">
+    <div><span class="jeep-detail-label">Jeep number</span><strong>{{ jeep.jeep_no }}</strong></div>
+    <div><span class="jeep-detail-label">Plate number</span><strong>{{ jeep.plate_no }}</strong></div>
+    <div><span class="jeep-detail-label">Route</span><strong>{{ jeep.route or "-" }}</strong></div>
+    <div>
+      <span class="jeep-detail-label">Registration expiry</span>
+      <strong>{{ jeep.registration_expiry or "-" }}</strong>
+      {% if jeep.registration_days_left is not none and jeep.registration_days_left < 0 %}
+        <span class="expired">Expired</span>
+      {% elif jeep.registration_days_left is not none and jeep.registration_days_left <= 30 %}
+        <span class="soon">Expiring soon</span>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="jeep-doc-section">
+  <h3>Currently assigned driver</h3>
+  {% if jeep.driver_id %}
+    <div class="jeep-driver-summary">
+      <p><strong>Name:</strong> {{ jeep.driver_name }}</p>
+      <p><strong>Contact:</strong> {{ jeep.driver_contact or "-" }}</p>
+      <p><strong>License no.:</strong> {{ jeep.license_no or "-" }}</p>
+      <p><strong>Assigned since:</strong> {{ jeep.driver_assigned_since or "-" }}</p>
+      <p>
+        <strong>License expiry:</strong> {{ jeep.license_expiry or "-" }}
+        {% if jeep.license_days_left is not none and jeep.license_days_left < 0 %}<span class="expired">Expired</span>
+        {% elif jeep.license_days_left is not none and jeep.license_days_left <= 30 %}<span class="soon">Expiring soon</span>{% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('driver_profile', driver_id=jeep.driver_id) }}" class="btn-sm">View driver profile</a>
+  {% else %}
+    <p class="muted">No driver is currently assigned to this jeep.</p>
+  {% endif %}
+</section>
+
+<section class="jeep-doc-section">
+  <div class="page-head">
+    <h3>Jeep documents</h3>
+    <a href="{{ url_for('docs_add') }}" class="btn-sm">Add file in DockTrack</a>
+  </div>
+  <p class="muted">Files linked directly to Jeep {{ jeep.jeep_no }}.</p>
+  <table class="table">
+    <thead>
+      <tr><th>Type</th><th>Document date</th><th>Expiry</th><th>File</th></tr>
+    </thead>
+    <tbody>
+      {% for doc in jeep_documents %}
+      <tr>
+        <td>{{ doc.doc_type }}</td>
+        <td>{{ doc.doc_date or "-" }}</td>
+        <td>
+          {{ doc.expiry_date or "-" }}
+          {% if doc.days_left is not none and doc.days_left < 0 %}<span class="expired">Expired</span>
+          {% elif doc.days_left is not none and doc.days_left <= 30 %}<span class="soon">Expiring soon</span>{% endif %}
+        </td>
+        <td><a href="{{ url_for('docs_file', doc_id=doc.id) }}" target="_blank" rel="noopener" class="btn-sm">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No documents are linked to this jeep yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

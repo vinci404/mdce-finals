@@ -350,6 +350,41 @@ def jeeps_list():
     db.close()
     return render_template("jeeps.html", jeeps=rows)
 
+@app.route("/jeeps/<int:jeep_id>")
+@login_required
+def jeep_profile(jeep_id):
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    try:
+        cur.execute("""
+            SELECT j.*, DATEDIFF(j.registration_expiry, CURDATE()) AS registration_days_left,
+                   d.id AS driver_id, d.full_name AS driver_name,
+                   d.contact_no AS driver_contact, d.license_no,
+                   d.license_expiry, DATEDIFF(d.license_expiry, CURDATE()) AS license_days_left
+            FROM jeeps j
+            LEFT JOIN drivers d ON d.jeep_id = j.id
+            WHERE j.id = %s
+        """, (jeep_id,))
+        jeep = cur.fetchone()
+        if not jeep:
+            flash("That jeep could not be found.")
+            return redirect(url_for("jeeps_list"))
+
+        cur.execute("""
+            SELECT d.id, d.doc_type, d.doc_date, d.expiry_date,
+                   DATEDIFF(d.expiry_date, CURDATE()) AS days_left
+            FROM documents d
+            WHERE d.jeep_id = %s
+            ORDER BY d.doc_date DESC, d.id DESC
+        """, (jeep_id,))
+        jeep_documents = cur.fetchall()
+
+        return render_template("jeep_profile.html", jeep=jeep,
+                               jeep_documents=jeep_documents)
+    finally:
+        cur.close()
+        db.close()
+
 @app.route("/jeeps/add", methods=["GET", "POST"])
 @login_required
 def jeep_add():
@@ -558,6 +593,55 @@ def drivers_list():
     cur.close()
     db.close()
     return render_template("drivers.html", drivers=rows)
+
+@app.route("/drivers/<int:driver_id>")
+@login_required
+def driver_profile(driver_id):
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    try:
+        cur.execute("""
+            SELECT d.*, TIMESTAMPDIFF(YEAR, d.birth_date, CURDATE()) AS age,
+                   DATEDIFF(d.license_expiry, CURDATE()) AS license_days_left,
+                   j.jeep_no, j.plate_no, j.route AS jeep_route,
+                   j.registration_expiry,
+                   DATEDIFF(j.registration_expiry, CURDATE()) AS registration_days_left,
+                   j.driver_assigned_since AS assigned_since
+            FROM drivers d
+            LEFT JOIN jeeps j ON j.id = d.jeep_id
+            WHERE d.id = %s
+        """, (driver_id,))
+        driver = cur.fetchone()
+        if not driver:
+            flash("That driver could not be found.")
+            return redirect(url_for("drivers_list"))
+
+        cur.execute("""
+            SELECT d.id, d.doc_type, d.doc_date, d.expiry_date,
+                   DATEDIFF(d.expiry_date, CURDATE()) AS days_left
+            FROM documents d
+            WHERE d.driver_id = %s
+            ORDER BY d.doc_date DESC, d.id DESC
+        """, (driver_id,))
+        driver_documents = cur.fetchall()
+
+        jeep_documents = []
+        if driver["jeep_id"]:
+            cur.execute("""
+                SELECT d.id, d.doc_type, d.doc_date, d.expiry_date,
+                       DATEDIFF(d.expiry_date, CURDATE()) AS days_left
+                FROM documents d
+                WHERE d.jeep_id = %s
+                ORDER BY d.doc_date DESC, d.id DESC
+            """, (driver["jeep_id"],))
+            jeep_documents = cur.fetchall()
+
+        return render_template("driver_profile.html", driver=driver,
+                               driver_documents=driver_documents,
+                               jeep_documents=jeep_documents)
+    finally:
+        cur.close()
+        db.close()
 
 @app.route("/drivers/add", methods=["GET", "POST"])
 @login_required

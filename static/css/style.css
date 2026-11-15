@@ -583,6 +583,169 @@ input:disabled {
     margin: 6px 0;
 }
 
+.driver-profile-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.driver-profile-actions .btn,
+.jeep-profile-actions .btn {
+    margin: 0;
+}
+
+.driver-profile-card {
+    padding: 24px;
+    border: 2px solid #3b8fb8;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(227, 238, 245, 0.92), rgba(127, 179, 208, 0.88));
+}
+
+.driver-profile-heading {
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(28, 61, 110, 0.35);
+}
+
+.driver-profile-heading h2 {
+    margin: 0 0 4px;
+    font-size: 28px;
+}
+
+.driver-profile-heading p {
+    margin: 0;
+    color: #31577f;
+}
+
+.driver-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 24px;
+}
+
+.driver-details-grid > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-wrap: anywhere;
+}
+
+.driver-detail-wide {
+    grid-column: 1 / -1;
+}
+
+.driver-detail-label {
+    font-size: 14px;
+    color: #31577f;
+}
+
+.driver-doc-section {
+    margin-top: 18px;
+    padding: 18px;
+    border: 1px solid #1c3d6e;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.38);
+}
+
+.driver-doc-section .page-head h3 {
+    margin: 0;
+}
+
+.driver-doc-section .muted {
+    margin-top: 8px;
+}
+
+.driver-jeep-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 20px;
+    margin: 12px 0 18px;
+    padding: 12px 16px;
+    border: 1px solid #7aa7bf;
+    border-radius: 6px;
+    background: rgba(207, 224, 238, 0.6);
+}
+
+.driver-jeep-summary p {
+    margin: 4px 0;
+}
+
+.jeep-profile-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.jeep-profile-card {
+    padding: 24px;
+    border: 2px solid #3b8fb8;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(227, 238, 245, 0.92), rgba(127, 179, 208, 0.88));
+}
+
+.jeep-profile-heading {
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(28, 61, 110, 0.35);
+}
+
+.jeep-profile-heading h2 {
+    margin: 0 0 4px;
+    font-size: 28px;
+}
+
+.jeep-profile-heading p {
+    margin: 0;
+    color: #31577f;
+}
+
+.jeep-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 24px;
+}
+
+.jeep-details-grid > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-wrap: anywhere;
+}
+
+.jeep-detail-label {
+    font-size: 14px;
+    color: #31577f;
+}
+
+.jeep-doc-section {
+    margin-top: 18px;
+    padding: 18px;
+    border: 1px solid #1c3d6e;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.38);
+}
+
+.jeep-doc-section > h3 {
+    margin-top: 0;
+}
+
+.jeep-driver-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 20px;
+    margin: 12px 0;
+    padding: 12px 16px;
+    border: 1px solid #7aa7bf;
+    border-radius: 6px;
+    background: rgba(207, 224, 238, 0.6);
+}
+
+.jeep-driver-summary p {
+    margin: 4px 0;
+}
+
 .muted {
     opacity: 0.8;
 }
@@ -941,5 +1104,35 @@ input.valid {
     .doc-preview-image {
         min-height: 300px;
         height: 420px;
+    }
+}
+
+@media (max-width: 600px) {
+    .driver-profile-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .jeep-profile-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .driver-details-grid,
+    .driver-jeep-summary,
+    .jeep-details-grid,
+    .jeep-driver-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .driver-detail-wide {
+        grid-column: auto;
+    }
+
+    .driver-profile-card,
+    .driver-doc-section,
+    .jeep-profile-card,
+    .jeep-doc-section {
+        padding: 14px;
     }
 }
