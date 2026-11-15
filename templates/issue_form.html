@@ -1,7 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
+{% if editing %}
+<div class="page-head">
+  <h2 class="page-title">Edit issue report</h2>
+  <a href="{{ url_for('issue_view', issue_id=issue.id) }}" class="btn-sm">View report</a>
+</div>
+{% else %}
 <h2 class="page-title">{{ title }}</h2>
+{% endif %}
 
 <form method="POST" enctype="multipart/form-data" class="form-card wide">
   <div class="form-grid">
@@ -160,7 +167,12 @@
         <td>{{ h.days_stopped }}{% if not h.date_fixed %} (ongoing){% endif %}</td>
         <td>{% if h.cost is not none %}₱{{ "{:,.2f}".format(h.cost) }}{% else %}-{% endif %}</td>
         <td><span class="badge {{ h.status|lower|replace(' ', '-') }}">{{ h.status }}</span></td>
-        <td><a href="{{ url_for('issues_edit', issue_id=h.id) }}">View/Edit</a></td>
+        <td>
+          <div class="issue-view-edit-actions">
+            <a href="{{ url_for('issue_view', issue_id=h.id) }}" class="btn-sm">View</a>
+            <a href="{{ url_for('issues_edit', issue_id=h.id) }}" class="btn-sm">Edit</a>
+          </div>
+        </td>
       </tr>
       {% endfor %}
     </table>

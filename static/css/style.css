@@ -67,13 +67,24 @@ input {
     display: block;
     margin: 0 auto;
     padding: 8px 28px;
-    background: #3b8fb8;
-    color: #fff;
+    background: #e8bd55;
+    color: #1c3d6e;
     border: 1px solid #1c3d6e;
     border-radius: 6px;
     cursor: pointer;
     font-family: inherit;
     font-size: 15px;
+}
+
+.btn:hover,
+.btn:focus-visible {
+    background: #d9a83b;
+    color: #142c50;
+}
+
+.btn:focus-visible {
+    outline: 3px solid #1c3d6e;
+    outline-offset: 2px;
 }
 
 .btn:disabled {
@@ -451,6 +462,158 @@ input:disabled {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+}
+
+.issue-profile-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.issue-profile-actions .btn {
+    margin: 0;
+}
+
+.issue-profile-card {
+    padding: 24px;
+    border: 2px solid #3b8fb8;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(227, 238, 245, 0.94), rgba(127, 179, 208, 0.88));
+}
+
+.issue-profile-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(28, 61, 110, 0.35);
+}
+
+.issue-profile-heading h2 {
+    margin: 0 0 6px;
+    font-size: 28px;
+}
+
+.issue-profile-heading h2 span {
+    font-size: 20px;
+    font-weight: normal;
+}
+
+.issue-profile-heading p {
+    margin: 0;
+}
+
+.issue-kicker {
+    margin-bottom: 8px !important;
+    color: #31577f;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.issue-profile-heading .badge {
+    flex-shrink: 0;
+    padding: 5px 12px;
+}
+
+.issue-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.issue-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid rgba(28, 61, 110, 0.35);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.issue-summary-item span,
+.issue-detail-label {
+    color: #31577f;
+    font-size: 14px;
+}
+
+.issue-summary-item strong {
+    font-size: 18px;
+}
+
+.issue-description {
+    margin-bottom: 18px;
+    padding: 16px;
+    border-left: 4px solid #e8bd55;
+    border-radius: 0 6px 6px 0;
+    background: rgba(255, 255, 255, 0.48);
+}
+
+.issue-description p {
+    margin: 8px 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.issue-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 24px;
+}
+
+.issue-details-grid > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-wrap: anywhere;
+}
+
+.issue-profile-section {
+    margin-top: 18px;
+    padding: 18px;
+    border: 1px solid #1c3d6e;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.38);
+}
+
+.issue-profile-section h3 {
+    margin: 0 0 14px;
+}
+
+.issue-profile-photos {
+    align-items: flex-start;
+}
+
+.issue-photo-link {
+    display: block;
+}
+
+.table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.issue-row-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+}
+
+.issue-view-edit-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.issue-view-edit-actions .btn-sm {
+    padding: 4px 9px;
 }
 
 .photo-box {
@@ -1118,11 +1281,22 @@ input.valid {
         flex-wrap: wrap;
     }
 
+    .issue-profile-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
     .driver-details-grid,
     .driver-jeep-summary,
     .jeep-details-grid,
-    .jeep-driver-summary {
+    .jeep-driver-summary,
+    .issue-summary-grid,
+    .issue-details-grid {
         grid-template-columns: 1fr;
+    }
+
+    .issue-profile-heading {
+        flex-direction: column;
     }
 
     .driver-detail-wide {
@@ -1132,7 +1306,9 @@ input.valid {
     .driver-profile-card,
     .driver-doc-section,
     .jeep-profile-card,
-    .jeep-doc-section {
+    .jeep-doc-section,
+    .issue-profile-card,
+    .issue-profile-section {
         padding: 14px;
     }
 }

@@ -34,11 +34,16 @@
       {% if i.editor and i.editor != i.reporter %}<br><span class="sub">edited: {{ i.editor }}</span>{% endif %}
     </td>
     <td>
-      <a href="{{ url_for('issues_edit', issue_id=i.id) }}" class="btn-sm">View / Edit</a>
-      <form method="POST" action="{{ url_for('issues_delete', issue_id=i.id) }}"
-            class="inline" onsubmit="return confirm('Delete this issue report?')">
-        <button type="submit" class="link-btn">Delete</button>
-      </form>
+      <div class="issue-row-actions">
+        <div class="issue-view-edit-actions">
+          <a href="{{ url_for('issue_view', issue_id=i.id) }}" class="btn-sm">View</a>
+          <a href="{{ url_for('issues_edit', issue_id=i.id) }}" class="btn-sm">Edit</a>
+        </div>
+        <form method="POST" action="{{ url_for('issues_delete', issue_id=i.id) }}"
+              class="inline" onsubmit="return confirm('Delete this issue report?')">
+          <button type="submit" class="link-btn">Delete</button>
+        </form>
+      </div>
     </td>
   </tr>
   {% else %}

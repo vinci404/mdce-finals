@@ -986,6 +986,49 @@ def issues_list():
     return render_template("issues.html", issues=rows, statuses=ISSUE_STATUSES,
                            current_status=status)
 
+@app.route("/issues/<int:issue_id>/view")
+@login_required
+def issue_view(issue_id):
+    db = get_db()
+    cur = db.cursor(dictionary=True, buffered=True)
+    try:
+        cur.execute("""
+            SELECT i.*, j.jeep_no, j.plate_no, dr.full_name AS driver_name,
+                   reporter.full_name AS reporter, editor.full_name AS editor,
+                   substitute.jeep_no AS substitute_jeep_no,
+                   DATEDIFF(COALESCE(i.date_fixed, CURDATE()), i.date_broken) AS days_stopped
+            FROM issues i
+            JOIN jeeps j ON j.id = i.jeep_id
+            LEFT JOIN drivers dr ON dr.id = i.driver_id
+            LEFT JOIN admin reporter ON reporter.id = i.created_by
+            LEFT JOIN admin editor ON editor.id = i.updated_by
+            LEFT JOIN jeeps substitute ON substitute.id = i.substitute_jeep_id
+            WHERE i.id = %s
+        """, (issue_id,))
+        issue = cur.fetchone()
+        if not issue:
+            flash("That issue report could not be found.")
+            return redirect(url_for("issues_list"))
+
+        cur.execute("SELECT id FROM issue_photos WHERE issue_id = %s ORDER BY id", (issue_id,))
+        photos = cur.fetchall()
+
+        cur.execute("""
+            SELECT i.id, i.issue_type, i.issue, i.status, i.date_broken,
+                   i.date_fixed, i.cost,
+                   DATEDIFF(COALESCE(i.date_fixed, CURDATE()), i.date_broken) AS days_stopped
+            FROM issues i
+            WHERE i.jeep_id = %s AND i.id <> %s
+            ORDER BY i.date_broken DESC, i.id DESC
+        """, (issue["jeep_id"], issue_id))
+        history = cur.fetchall()
+
+        return render_template("issue_profile.html", issue=issue,
+                               photos=photos, history=history)
+    finally:
+        cur.close()
+        db.close()
+
 @app.route("/issues/add", methods=["GET", "POST"])
 @login_required
 def issues_add():
