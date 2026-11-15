@@ -9,7 +9,7 @@
 <div class="tabs">
   <a href="{{ url_for('docs_list') }}" class="tab {% if not current_type %}active{% endif %}">All</a>
   {% for t in doc_types %}
-    <a href="{{ url_for('docs_list', type=t) }}" class="tab {% if current_type == t %}active{% endif %}">{{ t }}</a>
+    <a href="{{ url_for('docs_list', type=t) }}" class="tab {% if current_type == t %}active{% endif %}">{{ t.upper() }}</a>
   {% endfor %}
 </div>
 

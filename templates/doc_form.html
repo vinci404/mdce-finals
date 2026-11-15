@@ -2,50 +2,70 @@
 {% block title %}Add file{% endblock %}
 {% block content %}
 <h2 class="page-title">Add file</h2>
-<form method="POST" enctype="multipart/form-data" class="form-card">
-  <label>Document type</label>
-  <select name="doc_type" required>
-    {% for t in doc_types %}
-      <option value="{{ t }}" {% if form.get('doc_type') == t %}selected{% endif %}>{{ t }}</option>
-    {% endfor %}
-  </select>
 
-  <label>Belongs to</label>
-  <select name="owner" required>
-    <option value="">- choose -</option>
-    <optgroup label="Jeeps">
-      {% for j in jeeps %}
-        <option value="jeep:{{ j.id }}" {% if form.get('owner') == 'jeep:' ~ j.id %}selected{% endif %}>
-          {{ j.jeep_no }} - {{ j.plate_no }}
+<div class="doc-upload-layout">
+  <form method="POST" enctype="multipart/form-data" class="form-card doc-upload-form">
+    <label for="doc-type">Document type</label>
+    <select id="doc-type" name="doc_type" data-other="other-doc-type" required>
+      {% for t in doc_types %}
+        <option value="{{ t }}" {% if form.get('doc_type') == t %}selected{% endif %}>
+          {{ t.upper() if t != 'Other' else 'Other (type it)' }}
         </option>
       {% endfor %}
-    </optgroup>
-    <optgroup label="Drivers">
-      {% for d in drivers %}
-        <option value="driver:{{ d.id }}" {% if form.get('owner') == 'driver:' ~ d.id %}selected{% endif %}>
-          {{ d.full_name }}
-        </option>
+    </select>
+    <input type="text" name="other_doc_type" id="other-doc-type" maxlength="50"
+           placeholder="Type the document name" value="{{ form.get('other_doc_type') or '' }}"
+           aria-label="Other document name" {% if form.get('doc_type') != 'Other' %}hidden{% endif %}>
+
+    <label for="doc-owner">Belongs to</label>
+    <select id="doc-owner" name="owner" required>
+      <option value="">- choose -</option>
+      <optgroup label="Jeeps">
+        {% for j in jeeps %}
+          <option value="jeep:{{ j.id }}" {% if form.get('owner') == 'jeep:' ~ j.id %}selected{% endif %}>
+            {{ j.jeep_no }} - {{ j.plate_no }}
+          </option>
+        {% endfor %}
+      </optgroup>
+      <optgroup label="Drivers">
+        {% for d in drivers %}
+          <option value="driver:{{ d.id }}" {% if form.get('owner') == 'driver:' ~ d.id %}selected{% endif %}>
+            {{ d.full_name }}
+          </option>
+        {% endfor %}
+      </optgroup>
+    </select>
+
+    <label for="doc-date">Document date</label>
+    <input id="doc-date" type="date" name="doc_date" value="{{ form.get('doc_date') or '' }}">
+
+    <label for="expiry-date">Expiry date (leave blank if none)</label>
+    <input id="expiry-date" type="date" name="expiry_date" value="{{ form.get('expiry_date') or '' }}">
+
+    <label for="doc-file">File (PDF, PNG, JPG, or WebP)</label>
+    <input id="doc-file" type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" required>
+    <small class="doc-preview-help">Choose a file to preview it here before saving.</small>
+
+    {% if errors %}
+    <ul class="error-list">
+      {% for message in errors %}
+      <li>{{ message }}</li>
       {% endfor %}
-    </optgroup>
-  </select>
+    </ul>
+    {% endif %}
+    <button type="submit" class="btn">Save</button>
+    <a href="{{ url_for('docs_list') }}">Cancel</a>
+  </form>
 
-  <label>Document date</label>
-  <input type="date" name="doc_date" value="{{ form.get('doc_date') or '' }}">
+  <section class="card doc-preview-card" aria-labelledby="doc-preview-title">
+    <h3 id="doc-preview-title">File preview</h3>
+    <div class="doc-preview-empty" id="doc-preview-empty" aria-live="polite">
+      Choose a PDF or image file to preview it here.
+    </div>
+    <iframe id="doc-pdf-preview" class="doc-preview-frame" title="Selected PDF preview" hidden></iframe>
+    <img id="doc-image-preview" class="doc-preview-image" alt="Preview of the selected document" hidden>
+  </section>
+</div>
 
-  <label>Expiry date (leave blank if none)</label>
-  <input type="date" name="expiry_date" value="{{ form.get('expiry_date') or '' }}">
-
-  <label>File (pdf, png, jpg)</label>
-  <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.webp" required>
-
-  {% if errors %}
-  <ul class="error-list">
-    {% for message in errors %}
-    <li>{{ message }}</li>
-    {% endfor %}
-  </ul>
-  {% endif %}
-  <button type="submit" class="btn">Save</button>
-  <a href="{{ url_for('docs_list') }}">Cancel</a>
-</form>
+<script src="{{ url_for('static', filename='js/doc_preview.js') }}"></script>
 {% endblock %}

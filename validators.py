@@ -307,8 +307,17 @@ def validate_driver(form):
 def validate_document(form, allowed_types):
     errors = []
 
-    if form.get("doc_type") not in allowed_types:
+    doc_type = (form.get("doc_type") or "").strip()
+    if doc_type not in allowed_types:
         errors.append("Choose a valid document type.")
+    elif doc_type == "Other":
+        other_doc_type = (form.get("other_doc_type") or "").strip()
+        if not other_doc_type:
+            errors.append("Type the document name.")
+        elif len(other_doc_type) > 50:
+            errors.append("The document name must not exceed 50 characters.")
+        elif any(ord(char) < 32 for char in other_doc_type):
+            errors.append("The document name contains an invalid character.")
 
     owner = (form.get("owner") or "").strip()
     kind, separator, owner_id = owner.partition(":")

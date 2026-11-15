@@ -672,7 +672,8 @@ def driver_delete(driver_id):
 # ---------- DOCKTRACK ----------
 DOC_DIR = os.path.join(app.root_path, "uploads", "documents")
 ALLOWED_DOCS = {"pdf", "png", "jpg", "jpeg", "webp"}
-DOC_TYPES = ["OR", "CR", "PA", "Decision", "ICAR", "ID", "License", "Other"]
+DOC_TYPES = ["OR", "CR", "Decision"]
+DOC_TYPE_OPTIONS = DOC_TYPES + ["Other"]
 
 def save_document(file):
     if not file or file.filename == "":
@@ -747,7 +748,7 @@ def docs_add():
     errors = []
     try:
         if request.method == "POST":
-            errors = validate_document(request.form, DOC_TYPES)
+            errors = validate_document(request.form, DOC_TYPE_OPTIONS)
             kind, _, oid = (request.form.get("owner") or "").partition(":")
 
             if not errors:
@@ -765,13 +766,16 @@ def docs_add():
                     errors.append(str(e))
                 else:
                     try:
+                        doc_type = request.form.get("doc_type", "").strip()
+                        if doc_type == "Other":
+                            doc_type = request.form.get("other_doc_type", "").strip()
                         cur.execute("""
                             INSERT INTO documents
                               (jeep_id, driver_id, doc_type, doc_date, expiry_date, file_path)
                             VALUES (%s, %s, %s, %s, %s, %s)
                         """, (int(oid) if kind == "jeep" else None,
                               int(oid) if kind == "driver" else None,
-                              request.form["doc_type"], request.form.get("doc_date") or None,
+                              doc_type, request.form.get("doc_date") or None,
                               request.form.get("expiry_date") or None, stored))
                         db.commit()
                         return redirect(url_for("docs_list"))
@@ -783,7 +787,7 @@ def docs_add():
         cur.execute("SELECT id, full_name FROM drivers ORDER BY full_name")
         drivers = cur.fetchall()
         return render_template("doc_form.html", form=request.form, jeeps=jeeps,
-                               drivers=drivers, doc_types=DOC_TYPES, errors=errors)
+                               drivers=drivers, doc_types=DOC_TYPE_OPTIONS, errors=errors)
     finally:
         cur.close()
         db.close()
