@@ -338,9 +338,23 @@ input {
     box-sizing: border-box;
 }
 
-.doc-preview-card h3 {
+.doc-preview-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 12px;
     margin: 0 0 12px;
     flex: 0 0 auto;
+}
+
+.doc-preview-heading h3 {
+    margin: 0;
+}
+
+.doc-preview-limit {
+    color: #254b75;
+    font-size: 13px;
 }
 
 .doc-preview-columns {
