@@ -12,17 +12,17 @@ final project for 1st sem (client: mdce transpo)
 
 ## Project Overview
 
-MDCE FleetHub is an administrative information system for the staff of MDCE Transport Services OPC. It brings fleet records, driver information, vehicle documents, and issue reports together in one web application.
+MDCE FleetHub is an administrative information system for the staff of MDCE Transport Services Corp. It brings fleet records, driver information, vehicle documents, and issue reports together in one web application.
 
 The system is intended to make these records easier to organize, find, review, and maintain.
 
-## How the System Works
+# How the System Works
 
 An administrator logs in to access the system. From the dashboard, they can open the system’s main modules. Records and uploaded files are stored in the system’s database and file storage so staff can return to them later.
 
 The system connects related information. For example, a jeep profile can show its assigned driver and documents linked to that jeep. Issue reports can also be connected to a jeep and, when applicable, its driver.
 
-## Main Modules
+# Main Modules
 
 ### FleetHub
 
