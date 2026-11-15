@@ -2,6 +2,14 @@
     box-sizing: border-box;
 }
 
+:root {
+    --mdce-primary-blue: #3c91b5;
+    --mdce-light-blue: #d5e8f0;
+    --mdce-gold: #fff3cd;
+    --mdce-dark-blue: #254b75;
+    --mdce-danger: #b00020;
+}
+
 body {
     margin: 0;
     min-height: 100vh;
@@ -67,24 +75,33 @@ input {
     display: block;
     margin: 0 auto;
     padding: 8px 28px;
-    background: #e8bd55;
-    color: #1c3d6e;
-    border: 1px solid #1c3d6e;
+    background: var(--mdce-primary-blue);
+    color: #fff;
+    border: 1px solid var(--mdce-dark-blue);
     border-radius: 6px;
     cursor: pointer;
     font-family: inherit;
     font-size: 15px;
 }
 
-.btn:hover,
-.btn:focus-visible {
-    background: #d9a83b;
-    color: #142c50;
+.btn:hover {
+    background: var(--mdce-dark-blue);
+    color: #fff;
 }
 
 .btn:focus-visible {
-    outline: 3px solid #1c3d6e;
+    outline: 3px solid var(--mdce-gold);
     outline-offset: 2px;
+}
+
+.btn-accent {
+    background: var(--mdce-gold);
+    color: var(--mdce-dark-blue);
+}
+
+.btn-accent:hover {
+    background: #f5e6b2;
+    color: var(--mdce-dark-blue);
 }
 
 .btn:disabled {
@@ -146,7 +163,7 @@ input {
 }
 
 .nav-btn:hover {
-    background: #3b8fb8;
+    background: var(--mdce-primary-blue);
     color: #fff;
 }
 
@@ -162,7 +179,7 @@ input {
     font-size: 13px;
     text-decoration: none;
     color: #1c3d6e;
-    background: #cfe0ee;
+    background: var(--mdce-light-blue);
     border: 1px solid #1c3d6e;
     border-radius: 4px;
 }
@@ -247,7 +264,7 @@ input {
     border: none;
     padding: 0;
     margin-left: 8px;
-    color: #b00020;
+    color: var(--mdce-danger);
     cursor: pointer;
     font-family: inherit;
     font-size: inherit;
@@ -343,7 +360,7 @@ label {
 }
 
 .nav-btn.active {
-    background: #3b8fb8;
+    background: var(--mdce-primary-blue);
     color: #fff;
     font-weight: bold;
 }
@@ -364,8 +381,9 @@ label {
 }
 
 .tab.active {
-    background: #3b8fb8;
+    background: var(--mdce-primary-blue);
     color: #fff;
+    box-shadow: inset 0 -3px 0 var(--mdce-gold);
 }
 
 .thumb {
@@ -451,7 +469,7 @@ input:disabled {
 }
 
 .badge.in-progress {
-    background: #fff3cd;
+    background: var(--mdce-gold);
 }
 
 .badge.resolved {
@@ -547,7 +565,7 @@ input:disabled {
 .issue-description {
     margin-bottom: 18px;
     padding: 16px;
-    border-left: 4px solid #e8bd55;
+    border-left: 4px solid var(--mdce-gold);
     border-radius: 0 6px 6px 0;
     background: rgba(255, 255, 255, 0.48);
 }
@@ -973,14 +991,14 @@ input:disabled {
     padding: 4px 12px;
     font-size: 14px;
     text-decoration: none;
-    background: #3b8fb8;
+    background: var(--mdce-primary-blue);
     color: #fff;
-    border: 1px solid #1c3d6e;
+    border: 1px solid var(--mdce-dark-blue);
     border-radius: 5px;
 }
 
 .btn-sm:hover {
-    background: #1c3d6e;
+    background: var(--mdce-dark-blue);
 }
 
 .pw {
