@@ -303,25 +303,123 @@ input {
     grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
     align-items: start;
     gap: 16px;
+    height: min(68vh, 760px);
+    min-height: 520px;
+    overflow: hidden;
 }
 
 .doc-upload-form {
     width: 100%;
     max-width: none;
+    height: 100%;
+    overflow-y: auto;
+    box-sizing: border-box;
+    scrollbar-gutter: stable;
+}
+
+.doc-form-actions {
+    position: sticky;
+    bottom: -20px;
+    z-index: 2;
+    margin: 12px -20px -20px;
+    padding: 12px 20px 18px;
+    background: rgba(102, 166, 194, 0.97);
+    border-radius: 0 0 8px 8px;
 }
 
 .doc-preview-card {
     min-width: 0;
+    height: 100%;
     padding: 16px;
     background: rgba(255, 255, 255, 0.45);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .doc-preview-card h3 {
     margin: 0 0 12px;
+    flex: 0 0 auto;
+}
+
+.doc-preview-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.9fr);
+    gap: 14px;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+}
+
+.doc-preview-media,
+.doc-ocr-panel {
+    min-width: 0;
+    min-height: 0;
+}
+
+.doc-preview-media {
+    height: 100%;
+    display: flex;
+}
+
+.doc-ocr-panel {
+    padding: 12px;
+    background: rgba(207, 224, 238, 0.72);
+    border: 1px solid #7aa7bf;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.doc-ocr-panel h4 {
+    margin: 0 0 4px;
+    color: #1c3d6e;
+    flex: 0 0 auto;
+}
+
+.doc-ocr-help {
+    display: block;
+    margin: 0 0 8px;
+    color: #1c3d6e;
+    flex: 0 0 auto;
+}
+
+.doc-ocr-panel .btn {
+    align-self: flex-start;
+    margin: 0 0 8px;
+    flex: 0 0 auto;
+}
+
+.doc-ocr-result {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    flex: 1;
+    padding: 10px;
+    resize: none;
+    color: #1c3d6e;
+    background: #f7fbfd;
+    border: 1px solid #7aa7bf;
+    border-radius: 6px;
+    font: 14px/1.5 Arial, sans-serif;
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+.doc-ocr-status {
+    display: block;
+    min-height: 1.4em;
+    margin: 6px 0 0;
+    color: #1c3d6e;
+    flex: 0 0 auto;
 }
 
 .doc-preview-empty {
-    min-height: 420px;
+    height: 100%;
+    min-height: 0;
     display: grid;
     place-items: center;
     padding: 20px;
@@ -335,7 +433,8 @@ input {
 .doc-preview-frame {
     display: block;
     width: 100%;
-    height: 560px;
+    height: 100%;
+    min-height: 0;
     border: 1px solid #7aa7bf;
     border-radius: 6px;
     background: #fff;
@@ -344,7 +443,8 @@ input {
 .doc-preview-image {
     display: block;
     width: 100%;
-    height: 560px;
+    height: 100%;
+    min-height: 0;
     object-fit: contain;
     border: 1px solid #7aa7bf;
     border-radius: 6px;
@@ -355,6 +455,11 @@ input {
     display: block;
     margin: -8px 0 14px;
     color: #1c3d6e;
+}
+
+.doc-preview-media .doc-preview-frame,
+.doc-preview-media .doc-preview-image {
+    height: 100%;
 }
 
 [hidden] {
@@ -1295,16 +1400,43 @@ input.valid {
     }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
     .doc-upload-layout {
         grid-template-columns: 1fr;
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+    }
+
+    .doc-upload-form {
+        height: auto;
+        overflow: visible;
+    }
+
+    .doc-form-actions {
+        position: static;
+        margin-bottom: -20px;
+    }
+
+    .doc-preview-card {
+        height: min(72vh, 700px);
+        min-height: 520px;
+    }
+
+    .doc-preview-columns {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(220px, 1fr) minmax(220px, 1fr);
     }
 
     .doc-preview-empty,
     .doc-preview-frame,
     .doc-preview-image {
-        min-height: 300px;
-        height: 420px;
+        min-height: 0;
+        height: 100%;
+    }
+
+    .doc-ocr-result {
+        min-height: 0;
     }
 }
 

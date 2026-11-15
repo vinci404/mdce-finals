@@ -876,6 +876,66 @@ def docs_add():
         cur.close()
         db.close()
 
+@app.route("/docs/ocr", methods=["POST"])
+@login_required
+def docs_ocr():
+    """Read printed text from an upload without storing it in DockTrack."""
+    uploaded = request.files.get("file")
+    if not uploaded or not uploaded.filename:
+        return jsonify(error="Choose a document first."), 400
+
+    ext = uploaded.filename.rsplit(".", 1)[-1].lower() if "." in uploaded.filename else ""
+    if ext not in ALLOWED_DOCS:
+        return jsonify(error="OCR supports PDF, PNG, JPG, JPEG, and WebP files."), 400
+
+    try:
+        import io
+        import pymupdf
+        import pytesseract
+        from PIL import Image, UnidentifiedImageError
+
+        extracted_pages = []
+        if ext == "pdf":
+            pdf = pymupdf.open(stream=uploaded.read(), filetype="pdf")
+            if pdf.is_encrypted:
+                pdf.close()
+                return jsonify(error="This PDF is password-protected and cannot be read."), 400
+            if len(pdf) > 10:
+                pdf.close()
+                return jsonify(error="OCR is limited to 10-page PDFs for now. The file itself can still be uploaded."), 400
+            if len(pdf) == 0:
+                pdf.close()
+                return jsonify(error="This PDF has no pages to read."), 400
+
+            try:
+                for page_number, page in enumerate(pdf, start=1):
+                    pixmap = page.get_pixmap(matrix=pymupdf.Matrix(2.5, 2.5), alpha=False)
+                    image = Image.open(io.BytesIO(pixmap.tobytes("png")))
+                    page_text = pytesseract.image_to_string(image, lang="eng", timeout=20).strip()
+                    extracted_pages.append(f"--- Page {page_number} ---\n{page_text}" if page_text else "")
+            finally:
+                pdf.close()
+        else:
+            image = Image.open(uploaded.stream)
+            image.load()
+            text = pytesseract.image_to_string(image, lang="eng", timeout=30).strip()
+            extracted_pages.append(text)
+
+        recognized_text = "\n\n".join(page for page in extracted_pages if page)
+        return jsonify(text=recognized_text)
+    except ImportError:
+        return jsonify(error="OCR packages are missing. Install pytesseract, Pillow, and PyMuPDF."), 500
+    except pytesseract.TesseractNotFoundError:
+        return jsonify(error="Tesseract was not found. Install it and make sure it is available on PATH."), 500
+    except pytesseract.TesseractError:
+        return jsonify(error="Tesseract could not read this file. Try a clearer image or PDF."), 400
+    except (UnidentifiedImageError, pymupdf.FileDataError, pymupdf.EmptyFileError):
+        return jsonify(error="The selected file could not be opened. Check that it is a valid image or PDF."), 400
+    except RuntimeError as error:
+        if "timeout" in str(error).lower():
+            return jsonify(error="OCR took too long on this file. Try a clearer or smaller document."), 408
+        return jsonify(error="OCR could not process this file."), 400
+
 @app.route("/docs/<int:doc_id>/file")
 @login_required
 def docs_file(doc_id):

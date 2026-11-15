@@ -53,17 +53,32 @@
       {% endfor %}
     </ul>
     {% endif %}
-    <button type="submit" class="btn btn-accent">Save</button>
-    <a href="{{ url_for('docs_list') }}">Cancel</a>
+    <div class="doc-form-actions">
+      <button type="submit" class="btn btn-accent">Save</button>
+      <a href="{{ url_for('docs_list') }}">Cancel</a>
+    </div>
   </form>
 
   <section class="card doc-preview-card" aria-labelledby="doc-preview-title">
     <h3 id="doc-preview-title">File preview</h3>
-    <div class="doc-preview-empty" id="doc-preview-empty" aria-live="polite">
-      Choose a PDF or image file to preview it here.
+    <div class="doc-preview-columns">
+      <div class="doc-preview-media">
+        <div class="doc-preview-empty" id="doc-preview-empty" aria-live="polite">
+          Choose a PDF or image file to preview it here.
+        </div>
+        <iframe id="doc-pdf-preview" class="doc-preview-frame" title="Selected PDF preview" hidden></iframe>
+        <img id="doc-image-preview" class="doc-preview-image" alt="Preview of the selected document" hidden>
+      </div>
+      <section class="doc-ocr-panel" aria-labelledby="doc-ocr-title"
+               data-ocr-url="{{ url_for('docs_ocr') }}">
+        <h4 id="doc-ocr-title">Recognized text</h4>
+        <p class="doc-ocr-help">Read printed text from your file. Review the result; OCR can make mistakes.</p>
+        <button type="button" class="btn" id="doc-ocr-button" disabled>Read document</button>
+        <textarea id="doc-ocr-result" class="doc-ocr-result" readonly
+                  placeholder="OCR text will appear here." aria-label="Recognized document text"></textarea>
+        <small id="doc-ocr-status" class="doc-ocr-status" aria-live="polite"></small>
+      </section>
     </div>
-    <iframe id="doc-pdf-preview" class="doc-preview-frame" title="Selected PDF preview" hidden></iframe>
-    <img id="doc-image-preview" class="doc-preview-image" alt="Preview of the selected document" hidden>
   </section>
 </div>
 
