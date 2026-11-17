@@ -22,7 +22,7 @@ KNOWN_EMAIL_PROVIDERS = [
     "tutanota.com", "tuta.com", "fastmail.com", "hey.com",
 ]
 
-POSITIONS = ["President", "Vice President", "Secretary", "Treasurer", "Auditor", "Manager", "Staff"]
+POSITIONS = ["President", "Vice President", "Secretary"]
 LAGUNA_LGUS = [
     "Alaminos", "Bay", "Biñan City", "Cabuyao City", "Calamba City", "Calauan", "Cavinti",
     "Famy", "Kalayaan", "Liliw", "Los Baños", "Luisiana", "Lumban", "Mabitac", "Magdalena",
